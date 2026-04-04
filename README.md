@@ -13,12 +13,13 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 ## Features
 
 - Discord OAuth login
-- Guild and channel selector
+- Guild and channel selector with live sidebar navigation
 - Live embed preview
 - Link and interaction buttons
 - Template saving
 - Secure API routes with session auth
 - Basic rate limiting and centralized error handling
+- Discord-style single-canvas control panel UI
 
 ## Project Structure
 
@@ -39,11 +40,13 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 ## Setup
 
 1. Copy `.env.example` to `.env`.
-2. Fill in Discord OAuth and bot credentials.
-3. Set `REDIRECT_URI` in the Discord developer portal.
-4. Start MongoDB.
-5. Install dependencies with `npm install`.
-6. Run the app with `npm run dev` or `npm start`.
+2. Fill in `DISCORD_TOKEN`, `CLIENT_ID`, `CLIENT_SECRET`, `REDIRECT_URI`, `MONGO_URI`, and `SESSION_SECRET`.
+3. In the Discord Developer Portal, add `http://localhost:3000/auth/callback` under `OAuth2` redirect URLs for local development.
+4. Invite the bot to your Discord server with `View Channels`, `Send Messages`, and `Embed Links`.
+5. Start MongoDB or configure MongoDB Atlas network access.
+6. Install dependencies with `npm install`.
+7. Run the app with `npm run dev` or `npm start`.
+8. Open `http://localhost:3000`.
 
 ## Required Discord Setup
 
@@ -59,3 +62,5 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - The bot login is skipped if `DISCORD_TOKEN` is empty.
 - The database connection is skipped if `MONGO_URI` is empty.
 - Interaction buttons currently reply with a simple ephemeral confirmation and are ready for custom behavior.
+- The real dashboard is intended to run through the Express server, not directly from the filesystem.
+- A separate isolated demo sandbox exists in `dashboard/demo/` and is excluded from git.

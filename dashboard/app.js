@@ -138,10 +138,14 @@ function renderGuilds() {
     .join("");
 }
 
-function renderChannels() {
+function renderChannels(selectedChannelId = elements.channelSelect.value) {
   elements.channelSelect.innerHTML = state.channels
     .map((channel) => `<option value="${channel.id}"># ${escapeHtml(channel.name)}</option>`)
     .join("");
+
+  if (state.channels.some((channel) => channel.id === selectedChannelId)) {
+    elements.channelSelect.value = selectedChannelId;
+  }
 
   const activeGuild = state.guilds.find((guild) => guild.id === elements.guildSelect.value);
   elements.channelSidebarGuildName.textContent = activeGuild
@@ -219,6 +223,7 @@ function renderButtons() {
 
 async function loadChannels() {
   const guildId = elements.guildSelect.value;
+  const selectedChannelId = elements.channelSelect.value;
   if (!guildId) {
     state.channels = [];
     renderChannels();
@@ -226,10 +231,11 @@ async function loadChannels() {
   }
 
   state.channels = await request(`/api/channels/${guildId}`);
-  if (state.channels.length && !state.channels.some((channel) => channel.id === elements.channelSelect.value)) {
-    elements.channelSelect.value = state.channels[0].id;
-  }
-  renderChannels();
+  const fallbackChannelId =
+    selectedChannelId && state.channels.some((channel) => channel.id === selectedChannelId)
+      ? selectedChannelId
+      : state.channels[0]?.id || "";
+  renderChannels(fallbackChannelId);
 }
 
 async function loadTemplates() {
@@ -286,7 +292,7 @@ elements.guildSelect.addEventListener("change", () => {
 });
 
 elements.channelSelect.addEventListener("change", () => {
-  renderChannels();
+  renderChannels(elements.channelSelect.value);
   setStatus("Channel selected");
 });
 
@@ -297,7 +303,7 @@ elements.channelNav.addEventListener("click", (event) => {
   }
 
   elements.channelSelect.value = target.dataset.channelId;
-  renderChannels();
+  renderChannels(target.dataset.channelId);
   setStatus(`Viewing #${target.textContent.trim().replace(/^#\s*/, "")}`);
 });
 
