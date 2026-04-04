@@ -13,9 +13,14 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 ## Features
 
 - Discord OAuth login
+- Signed-in Discord profile display with avatar
 - Guild and channel selector with live sidebar navigation
 - Live embed preview
+- Analytics page for bot uptime, joined guilds, member totals, and guild breakdown
 - Link and interaction buttons
+- Message content above embeds
+- Mention builder for members, roles, channels, `@everyone`, and `@here`
+- Post-send reactions
 - Template saving
 - Secure API routes with session auth
 - Basic rate limiting and centralized error handling
@@ -56,8 +61,13 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - Bot permissions:
   - `Send Messages`
   - `Embed Links`
+- Recommended bot permissions:
+  - `Add Reactions`
+  - `View Channels`
 - User permissions in target guild:
   - `Manage Guild` or `Administrator`
+- For member mention selection:
+  - enable `Server Members Intent` in the Discord Developer Portal under `Bot`
 
 ## Notes
 
@@ -66,5 +76,7 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - Interaction buttons currently reply with a simple ephemeral confirmation and are ready for custom behavior.
 - Empty button rows are ignored before save/send so unfinished slots do not trigger validation errors.
 - The bot startup uses the current `clientReady` event name for discord.js compatibility.
+- If `Server Members Intent` is disabled or member fetch times out, member mention options are limited but the dashboard still works.
+- The builder page now supports analytics, reactions, mentions, and message content alongside embeds.
 - The real dashboard is intended to run through the Express server, not directly from the filesystem.
 - A separate isolated demo sandbox exists in `dashboard/demo/` and is excluded from git.

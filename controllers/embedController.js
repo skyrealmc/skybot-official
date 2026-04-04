@@ -2,7 +2,10 @@ const {
   assertGuildAccess,
   buildEmbedPayload,
   buildButtonRows,
+  buildOutgoingContent,
   fetchGuildChannels,
+  fetchGuildResources,
+  fetchBotAnalytics,
   sendEmbedMessage
 } = require("../services/discordService");
 const { validateEmbedRequest } = require("../middlewares/validators");
@@ -31,6 +34,36 @@ function getChannels({ client }) {
   };
 }
 
+function getGuildResources({ client }) {
+  return async (req, res, next) => {
+    try {
+      const { guildId } = req.params;
+      const guilds = req.session.guilds || [];
+      const guild = guilds.find((entry) => entry.id === guildId);
+
+      if (!guild || !assertGuildAccess(guild)) {
+        return res.status(403).json({ error: "Unauthorized guild access." });
+      }
+
+      const resources = await fetchGuildResources(client, guildId);
+      return res.json(resources);
+    } catch (error) {
+      return next(error);
+    }
+  };
+}
+
+function getAnalytics({ client }) {
+  return async (req, res, next) => {
+    try {
+      const analytics = await fetchBotAnalytics(client, req.session.guilds || []);
+      return res.json(analytics);
+    } catch (error) {
+      return next(error);
+    }
+  };
+}
+
 function sendEmbed({ client }) {
   return async (req, res, next) => {
     try {
@@ -45,10 +78,16 @@ function sendEmbed({ client }) {
 
       const embed = buildEmbedPayload(req.body.embedData);
       const components = buildButtonRows(req.body.buttons || []);
+      const content = buildOutgoingContent({
+        messageContent: req.body.messageContent,
+        mentions: req.body.mentions || []
+      });
       const message = await sendEmbedMessage(client, {
         channelId: req.body.channelId,
+        content,
         embed,
-        components
+        components,
+        reactions: req.body.reactions || []
       });
 
       return res.json({
@@ -64,5 +103,7 @@ function sendEmbed({ client }) {
 module.exports = {
   getGuilds,
   getChannels,
+  getGuildResources,
+  getAnalytics,
   sendEmbed
 };

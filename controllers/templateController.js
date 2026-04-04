@@ -5,8 +5,11 @@ async function saveTemplate(req, res, next) {
     const template = await Template.create({
       userId: req.session.user.id,
       name: req.body.name,
+      messageContent: req.body.messageContent || "",
       embedData: req.body.embedData,
-      buttons: req.body.buttons || []
+      buttons: req.body.buttons || [],
+      mentions: req.body.mentions || [],
+      reactions: req.body.reactions || []
     });
 
     res.status(201).json(template);

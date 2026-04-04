@@ -2,6 +2,7 @@ const state = {
   session: null,
   guilds: [],
   channels: [],
+  resources: { channels: [], roles: [], members: [] },
   templates: [],
   buttons: []
 };
@@ -13,6 +14,7 @@ const elements = {
   channelSelect: document.querySelector("#channelSelect"),
   channelSidebarGuildName: document.querySelector("#channelSidebarGuildName"),
   channelNav: document.querySelector("#channelNav"),
+  messageContent: document.querySelector("#messageContent"),
   templateName: document.querySelector("#templateName"),
   title: document.querySelector("#title"),
   description: document.querySelector("#description"),
@@ -24,11 +26,15 @@ const elements = {
   timestamp: document.querySelector("#timestamp"),
   previewCard: document.querySelector("#previewCard"),
   buttonsContainer: document.querySelector("#buttonsContainer"),
+  mentionsContainer: document.querySelector("#mentionsContainer"),
   buttonTemplate: document.querySelector("#buttonTemplate"),
+  mentionTemplate: document.querySelector("#mentionTemplate"),
   addButtonButton: document.querySelector("#addButtonButton"),
+  addMentionButton: document.querySelector("#addMentionButton"),
   saveTemplateButton: document.querySelector("#saveTemplateButton"),
   sendEmbedButton: document.querySelector("#sendEmbedButton"),
   templatesList: document.querySelector("#templatesList"),
+  reactionsInput: document.querySelector("#reactionsInput"),
   statusText: document.querySelector("#statusText"),
   logoutButton: document.querySelector("#logoutButton")
 };
@@ -68,6 +74,24 @@ function readEmbedData() {
   };
 }
 
+function getSerializableMentions() {
+  return Array.from(elements.mentionsContainer.querySelectorAll(".mention-config"))
+    .map((block) => ({
+      type: block.querySelector('[data-mention-field="type"]').value,
+      id: block.querySelector('[data-mention-field="id"]').value
+    }))
+    .filter((mention) =>
+      ["everyone", "here"].includes(mention.type) || Boolean(mention.id)
+    );
+}
+
+function getSerializableReactions() {
+  return elements.reactionsInput.value
+    .split(/[\n,]+/)
+    .map((reaction) => reaction.trim())
+    .filter(Boolean);
+}
+
 function getSerializableButtons() {
   return state.buttons
     .map((button) => ({
@@ -86,6 +110,7 @@ function getSerializableButtons() {
 
 function renderPreview() {
   const embed = readEmbedData();
+  const messageContent = elements.messageContent.value.trim();
   const timestamp = embed.timestamp ? new Date().toLocaleString() : "";
   const buttonHtml = getSerializableButtons()
     .filter((button) => button.label)
@@ -99,6 +124,7 @@ function renderPreview() {
 
   elements.previewCard.innerHTML = `
     <div class="preview-embed" style="border-left-color: ${embed.color || "#5865f2"}">
+      ${messageContent ? `<div class="preview-content">${escapeHtml(messageContent)}</div>` : ""}
       ${
         embed.author
           ? `<div class="preview-author">${escapeHtml(embed.author)}</div>`
@@ -198,6 +224,37 @@ function renderTemplates() {
     .join("");
 }
 
+function getMentionOptions(type) {
+  if (type === "member") return state.resources.members;
+  if (type === "role") return state.resources.roles;
+  if (type === "channel") return state.resources.channels;
+  return [];
+}
+
+function syncMentionUi(block, mention = {}) {
+  const typeSelect = block.querySelector('[data-mention-field="type"]');
+  const targetWrapper = block.querySelector('[data-role="target"]');
+  const targetSelect = block.querySelector('[data-mention-field="id"]');
+  const type = typeSelect.value;
+  const requiresTarget = ["member", "role", "channel"].includes(type);
+
+  targetWrapper.classList.toggle("hidden", !requiresTarget);
+
+  if (!requiresTarget) {
+    targetSelect.innerHTML = "";
+    return;
+  }
+
+  const options = getMentionOptions(type);
+  targetSelect.innerHTML = options
+    .map((option) => `<option value="${option.id}">${escapeHtml(option.name)}</option>`)
+    .join("");
+
+  if (mention.id && options.some((option) => option.id === mention.id)) {
+    targetSelect.value = mention.id;
+  }
+}
+
 function syncButtonUi(block, index) {
   const button = state.buttons[index];
   const type = block.querySelector('[data-button-field="type"]');
@@ -237,6 +294,34 @@ function renderButtons() {
   });
 }
 
+function renderMentions(mentions = getSerializableMentions()) {
+  elements.mentionsContainer.innerHTML = "";
+
+  mentions.forEach((mention) => {
+    const fragment = elements.mentionTemplate.content.cloneNode(true);
+    const block = fragment.querySelector(".mention-config");
+    const typeSelect = block.querySelector('[data-mention-field="type"]');
+
+    typeSelect.value = mention.type || "member";
+    syncMentionUi(block, mention);
+
+    typeSelect.addEventListener("change", () => {
+      syncMentionUi(block);
+      renderPreview();
+    });
+
+    const targetSelect = block.querySelector('[data-mention-field="id"]');
+    targetSelect.addEventListener("change", renderPreview);
+
+    block.querySelector(".remove-mention").addEventListener("click", () => {
+      block.remove();
+      renderPreview();
+    });
+
+    elements.mentionsContainer.appendChild(fragment);
+  });
+}
+
 async function loadChannels() {
   const guildId = elements.guildSelect.value;
   const selectedChannelId = elements.channelSelect.value;
@@ -254,12 +339,25 @@ async function loadChannels() {
   renderChannels(fallbackChannelId);
 }
 
+async function loadGuildResources() {
+  const guildId = elements.guildSelect.value;
+  if (!guildId) {
+    state.resources = { channels: [], roles: [], members: [] };
+    renderMentions();
+    return;
+  }
+
+  state.resources = await request(`/api/resources/${guildId}`);
+  renderMentions(getSerializableMentions());
+}
+
 async function loadTemplates() {
   state.templates = await request("/api/templates");
   renderTemplates();
 }
 
 function applyTemplate(template) {
+  elements.messageContent.value = template.messageContent || "";
   const embed = template.embedData || {};
   elements.templateName.value = template.name || "";
   elements.title.value = embed.title || "";
@@ -271,6 +369,8 @@ function applyTemplate(template) {
   elements.thumbnail.value = embed.thumbnail || "";
   elements.timestamp.checked = Boolean(embed.timestamp);
   state.buttons = template.buttons || [];
+  renderMentions(template.mentions || []);
+  elements.reactionsInput.value = (template.reactions || []).join(", ");
   renderButtons();
   renderPreview();
 }
@@ -284,16 +384,24 @@ async function initialize() {
     state.guilds = session.guilds || [];
 
     elements.authArea.innerHTML = `
-      <div>
-        <div class="panel-subtitle">Signed in as</div>
-        <strong>${escapeHtml(session.user.username)}</strong>
+      <div class="auth-user auth-user-card">
+        <img class="auth-avatar" src="${escapeHtml(session.user.avatarUrl || "")}" alt="${escapeHtml(
+          session.user.username
+        )}" />
+        <div>
+          <div class="panel-subtitle">Signed in as</div>
+          <strong>${escapeHtml(session.user.username)}</strong>
+        </div>
+        <a class="ghost-button" href="./analytics.html">Analytics</a>
       </div>
     `;
     elements.dashboardApp.classList.remove("hidden");
 
     renderGuilds();
     await loadChannels();
+    await loadGuildResources();
     await loadTemplates();
+    renderMentions();
     setStatus("Ready");
   } catch (_error) {
     setStatus("Sign in required");
@@ -303,6 +411,7 @@ async function initialize() {
 elements.guildSelect.addEventListener("change", () => {
   setStatus("Loading channels");
   loadChannels()
+    .then(() => loadGuildResources())
     .then(() => setStatus("Ready"))
     .catch((error) => setStatus(error.message));
 });
@@ -324,6 +433,7 @@ elements.channelNav.addEventListener("click", (event) => {
 });
 
 [
+  elements.messageContent,
   elements.title,
   elements.description,
   elements.color,
@@ -342,6 +452,10 @@ elements.addButtonButton.addEventListener("click", () => {
   renderButtons();
 });
 
+elements.addMentionButton.addEventListener("click", () => {
+  renderMentions([...getSerializableMentions(), { type: "member", id: "" }]);
+});
+
 elements.saveTemplateButton.addEventListener("click", async () => {
   setStatus("Saving template");
 
@@ -350,8 +464,11 @@ elements.saveTemplateButton.addEventListener("click", async () => {
       method: "POST",
       body: JSON.stringify({
         name: elements.templateName.value.trim() || "Untitled template",
+        messageContent: elements.messageContent.value.trim(),
         embedData: readEmbedData(),
-        buttons: getSerializableButtons()
+        buttons: getSerializableButtons(),
+        mentions: getSerializableMentions(),
+        reactions: getSerializableReactions()
       })
     });
     await loadTemplates();
@@ -370,8 +487,11 @@ elements.sendEmbedButton.addEventListener("click", async () => {
       body: JSON.stringify({
         guildId: elements.guildSelect.value,
         channelId: elements.channelSelect.value,
+        messageContent: elements.messageContent.value.trim(),
         embedData: readEmbedData(),
-        buttons: getSerializableButtons()
+        buttons: getSerializableButtons(),
+        mentions: getSerializableMentions(),
+        reactions: getSerializableReactions()
       })
     });
     setStatus(`Sent as ${response.messageId}`);

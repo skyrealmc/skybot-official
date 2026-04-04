@@ -18,6 +18,17 @@ function validateButton(button) {
   }
 }
 
+function validateMention(mention) {
+  const allowedTypes = ["member", "role", "channel", "everyone", "here"];
+  if (!allowedTypes.includes(mention.type)) {
+    throw createError("Mention type is invalid.");
+  }
+
+  if (["member", "role", "channel"].includes(mention.type) && !mention.id) {
+    throw createError(`Mention type ${mention.type} requires an id.`);
+  }
+}
+
 function validateEmbedRequest(payload) {
   if (!payload.guildId || !payload.channelId) {
     throw createError("Guild and channel are required.");
@@ -33,6 +44,24 @@ function validateEmbedRequest(payload) {
   }
 
   buttons.forEach(validateButton);
+
+  const mentions = payload.mentions || [];
+  if (!Array.isArray(mentions)) {
+    throw createError("mentions must be an array.");
+  }
+
+  mentions.forEach(validateMention);
+
+  const reactions = payload.reactions || [];
+  if (!Array.isArray(reactions)) {
+    throw createError("reactions must be an array.");
+  }
+
+  reactions.forEach((reaction) => {
+    if (!reaction || typeof reaction !== "string") {
+      throw createError("Each reaction must be a non-empty string.");
+    }
+  });
 }
 
 module.exports = {

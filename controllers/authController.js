@@ -7,6 +7,15 @@ const {
 } = require("../services/discordAuthService");
 const logger = require("../utils/logger");
 
+function buildAvatarUrl(user) {
+  if (!user.avatar) {
+    const fallbackIndex = Number(user.discriminator || 0) % 5;
+    return `https://cdn.discordapp.com/embed/avatars/${fallbackIndex}.png`;
+  }
+
+  return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
+}
+
 async function login(_req, res) {
   res.redirect(buildLoginUrl());
 }
@@ -41,7 +50,12 @@ async function callback(req, res, next) {
     req.session.user = {
       id: storedUser.discordId,
       username: storedUser.username,
-      avatar: storedUser.avatar
+      avatar: storedUser.avatar,
+      avatarUrl: buildAvatarUrl({
+        id: user.id,
+        avatar: user.avatar,
+        discriminator: user.discriminator
+      })
     };
     req.session.guilds = storedUser.guilds;
 

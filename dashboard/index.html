@@ -29,6 +29,7 @@
             </div>
             <div class="hero-actions" id="authArea">
               <a class="primary-button" href="/auth/login">Login with Discord</a>
+              <a class="ghost-button" href="./analytics.html">Analytics</a>
             </div>
           </section>
 
@@ -80,6 +81,10 @@
                   <button class="ghost-button" id="logoutButton" type="button">Logout</button>
                 </div>
                 <div class="field-grid">
+                  <label>
+                    Message content
+                    <textarea id="messageContent" rows="3" placeholder="Text that appears above the embed"></textarea>
+                  </label>
                   <label>
                     Guild
                     <select id="guildSelect"></select>
@@ -137,6 +142,18 @@
                   </button>
                 </div>
                 <div id="buttonsContainer" class="buttons-builder"></div>
+                <div class="panel-spacer"></div>
+                <div class="panel-header">
+                  <h2>Mentions</h2>
+                  <button class="secondary-button" id="addMentionButton" type="button">
+                    Add Mention
+                  </button>
+                </div>
+                <div id="mentionsContainer" class="mentions-builder"></div>
+                <label class="inline-field">
+                  Reactions
+                  <input id="reactionsInput" type="text" placeholder="🔥, ✅, 🎉" />
+                </label>
               </section>
 
               <section class="panel preview-panel">
@@ -173,6 +190,26 @@
           <input data-button-field="customId" type="text" maxlength="100" />
         </label>
         <button class="ghost-button remove-button" type="button">Remove</button>
+      </div>
+    </template>
+
+    <template id="mentionTemplate">
+      <div class="mention-config">
+        <label>
+          Type
+          <select data-mention-field="type">
+            <option value="member">Member</option>
+            <option value="role">Role</option>
+            <option value="channel">Channel</option>
+            <option value="everyone">Everyone</option>
+            <option value="here">Here</option>
+          </select>
+        </label>
+        <label data-role="target">
+          Target
+          <select data-mention-field="id"></select>
+        </label>
+        <button class="ghost-button remove-mention" type="button">Remove</button>
       </div>
     </template>
 

@@ -5,6 +5,8 @@ const requireAuth = require("../middlewares/requireAuth");
 const {
   getGuilds,
   getChannels,
+  getGuildResources,
+  getAnalytics,
   sendEmbed
 } = require("../controllers/embedController");
 const {
@@ -25,7 +27,9 @@ function createApiRouter({ client }) {
   router.use(requireAuth);
 
   router.get("/guilds", getGuilds);
+  router.get("/analytics", getAnalytics({ client }));
   router.get("/channels/:guildId", getChannels({ client }));
+  router.get("/resources/:guildId", getGuildResources({ client }));
   router.post("/send-embed", sendEmbed({ client }));
   router.post("/save-template", saveTemplate);
   router.get("/templates", getTemplates);

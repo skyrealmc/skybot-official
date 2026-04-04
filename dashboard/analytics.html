@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SKY REALM | SKY BOT S2 Analytics</title>
+    <meta
+      name="description"
+      content="Analytics dashboard for the official SKY REALM SKY BOT S2 bot."
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="workspace-canvas analytics-canvas">
+        <section class="topbar">
+          <div>
+            <p class="eyebrow">Official SKY REALM Control Panel</p>
+            <h1>SKY BOT S2 analytics.</h1>
+          </div>
+          <div class="hero-actions" id="authArea">
+            <a class="ghost-button" href="./index.html">Builder</a>
+          </div>
+        </section>
+
+        <section class="hero-card">
+          <div class="hero-copy-block">
+            <div class="hero-icon">A</div>
+            <div>
+              <h2>Bot and server analytics</h2>
+              <p class="hero-copy">
+                Review uptime, joined guilds, member totals, and server details for SKY BOT S2.
+              </p>
+            </div>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-card">
+              <span class="panel-subtitle">Status</span>
+              <strong id="statusText">Loading</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="analytics-layout hidden" id="analyticsApp">
+          <section id="analyticsSummary" class="analytics-summary"></section>
+          <section class="panel analytics-panel">
+            <div class="panel-header">
+              <h2>Guild Breakdown</h2>
+            </div>
+            <div id="analyticsGuildTable" class="analytics-table"></div>
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <script src="./analytics.js" type="module"></script>
+  </body>
+</html>
