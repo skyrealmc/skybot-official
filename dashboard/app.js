@@ -68,10 +68,26 @@ function readEmbedData() {
   };
 }
 
+function getSerializableButtons() {
+  return state.buttons
+    .map((button) => ({
+      type: button.type || "link",
+      label: (button.label || "").trim(),
+      url: (button.url || "").trim(),
+      customId: (button.customId || "").trim()
+    }))
+    .filter((button) => {
+      const isCompletelyEmpty =
+        !button.label && !button.url && !button.customId;
+
+      return !isCompletelyEmpty;
+    });
+}
+
 function renderPreview() {
   const embed = readEmbedData();
   const timestamp = embed.timestamp ? new Date().toLocaleString() : "";
-  const buttonHtml = state.buttons
+  const buttonHtml = getSerializableButtons()
     .filter((button) => button.label)
     .map(
       (button) =>
@@ -335,7 +351,7 @@ elements.saveTemplateButton.addEventListener("click", async () => {
       body: JSON.stringify({
         name: elements.templateName.value.trim() || "Untitled template",
         embedData: readEmbedData(),
-        buttons: state.buttons
+        buttons: getSerializableButtons()
       })
     });
     await loadTemplates();
@@ -355,7 +371,7 @@ elements.sendEmbedButton.addEventListener("click", async () => {
         guildId: elements.guildSelect.value,
         channelId: elements.channelSelect.value,
         embedData: readEmbedData(),
-        buttons: state.buttons
+        buttons: getSerializableButtons()
       })
     });
     setStatus(`Sent as ${response.messageId}`);

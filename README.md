@@ -20,6 +20,8 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - Secure API routes with session auth
 - Basic rate limiting and centralized error handling
 - Discord-style single-canvas control panel UI
+- Full-width responsive workspace layout for desktop and mobile
+- Channel selection persistence in both sidebar and selector controls
 
 ## Project Structure
 
@@ -62,5 +64,7 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - The bot login is skipped if `DISCORD_TOKEN` is empty.
 - The database connection is skipped if `MONGO_URI` is empty.
 - Interaction buttons currently reply with a simple ephemeral confirmation and are ready for custom behavior.
+- Empty button rows are ignored before save/send so unfinished slots do not trigger validation errors.
+- The bot startup uses the current `clientReady` event name for discord.js compatibility.
 - The real dashboard is intended to run through the Express server, not directly from the filesystem.
 - A separate isolated demo sandbox exists in `dashboard/demo/` and is excluded from git.
