@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SKY REALM | SKY BOT S2 Dashboard</title>
+    <meta
+      name="description"
+      content="Official SKY REALM Minecraft community control panel for SKY BOT S2, built by chriz3656."
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-frame">
+      <aside class="server-rail" aria-hidden="true">
+        <div class="server-badge active">S</div>
+        <div class="server-badge">E</div>
+        <div class="server-badge">B</div>
+      </aside>
+
+      <div class="page-shell">
+        <div class="workspace-canvas">
+          <section class="topbar">
+            <div>
+              <p class="eyebrow">Official SKY REALM Control Panel</p>
+              <h1>SKY BOT S2 dashboard.</h1>
+            </div>
+            <div class="hero-actions" id="authArea">
+              <a class="primary-button" href="/auth/login">Login with Discord</a>
+            </div>
+          </section>
+
+          <section class="hero-card">
+            <div class="hero-copy-block">
+              <div class="hero-icon">+</div>
+              <div>
+                <h2>Manage the official SKY REALM community bot</h2>
+                <p class="hero-copy">
+                  Control panel creator by chriz3656 for the official SKY REALM
+                  Minecraft community, with live preview, templates, and bot message tools.
+                </p>
+              </div>
+            </div>
+            <div class="hero-stats">
+              <div class="stat-card">
+                <span class="panel-subtitle">Mode</span>
+                <strong>SKY BOT S2</strong>
+              </div>
+              <div class="stat-card">
+                <span class="panel-subtitle">Status</span>
+                <strong id="statusText">Idle</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="demo-layout hidden" id="dashboardApp">
+            <aside class="channel-sidebar">
+              <div class="channel-sidebar-header">
+                <span class="panel-subtitle">Server</span>
+                <strong id="channelSidebarGuildName">Select a guild</strong>
+              </div>
+              <div class="channel-sidebar-body">
+                <div class="channel-group">
+                  <div class="channel-group-title">Text Channels</div>
+                  <div id="channelNav" class="channel-nav"></div>
+                </div>
+                <div class="channel-group">
+                  <div class="channel-group-title">Overview</div>
+                  <div class="status-pill">Live Workspace</div>
+                </div>
+              </div>
+            </aside>
+
+            <main class="dashboard-grid">
+              <section class="panel">
+                <div class="panel-header">
+                  <h2>Workspace</h2>
+                  <button class="ghost-button" id="logoutButton" type="button">Logout</button>
+                </div>
+                <div class="field-grid">
+                  <label>
+                    Guild
+                    <select id="guildSelect"></select>
+                  </label>
+                  <label>
+                    Channel
+                    <select id="channelSelect"></select>
+                  </label>
+                  <label>
+                    Template name
+                    <input id="templateName" type="text" placeholder="Promotion banner" />
+                  </label>
+                  <div class="button-row">
+                    <button class="secondary-button" id="saveTemplateButton" type="button">
+                      Save Template
+                    </button>
+                    <button class="primary-button" id="sendEmbedButton" type="button">
+                      Send Embed
+                    </button>
+                  </div>
+                </div>
+                <div class="template-list">
+                  <div class="panel-subtitle">Saved templates</div>
+                  <div id="templatesList" class="template-items"></div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-header">
+                  <h2>Embed Builder</h2>
+                </div>
+                <div class="field-grid">
+                  <label>Title <input id="title" type="text" maxlength="256" /></label>
+                  <label>
+                    Description
+                    <textarea id="description" rows="5"></textarea>
+                  </label>
+                  <label>Color <input id="color" type="color" value="#5865f2" /></label>
+                  <label>Author <input id="author" type="text" /></label>
+                  <label>Footer <input id="footer" type="text" /></label>
+                  <label>Image URL <input id="image" type="url" /></label>
+                  <label>Thumbnail URL <input id="thumbnail" type="url" /></label>
+                  <label class="checkbox">
+                    <input id="timestamp" type="checkbox" />
+                    Include timestamp
+                  </label>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-header">
+                  <h2>Buttons</h2>
+                  <button class="secondary-button" id="addButtonButton" type="button">
+                    Add Button
+                  </button>
+                </div>
+                <div id="buttonsContainer" class="buttons-builder"></div>
+              </section>
+
+              <section class="panel preview-panel">
+                <div class="panel-header">
+                  <h2>Live Preview</h2>
+                  <span class="status-pill">Discord View</span>
+                </div>
+                <div id="previewCard" class="discord-preview"></div>
+              </section>
+            </main>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <template id="buttonTemplate">
+      <div class="button-config">
+        <label>
+          Type
+          <select data-button-field="type">
+            <option value="link">Link</option>
+            <option value="interaction">Interaction</option>
+          </select>
+        </label>
+        <label>
+          Label
+          <input data-button-field="label" type="text" maxlength="80" />
+        </label>
+        <label data-role="url">
+          URL
+          <input data-button-field="url" type="url" />
+        </label>
+        <label data-role="customId" class="hidden">
+          Custom ID
+          <input data-button-field="customId" type="text" maxlength="100" />
+        </label>
+        <button class="ghost-button remove-button" type="button">Remove</button>
+      </div>
+    </template>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
