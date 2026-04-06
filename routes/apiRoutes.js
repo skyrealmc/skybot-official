@@ -7,7 +7,8 @@ const {
   getChannels,
   getGuildResources,
   getAnalytics,
-  sendEmbed
+  sendMessage,
+  validateMessagePayload
 } = require("../controllers/embedController");
 const {
   saveTemplate,
@@ -30,7 +31,8 @@ function createApiRouter({ client }) {
   router.get("/analytics", getAnalytics({ client }));
   router.get("/channels/:guildId", getChannels({ client }));
   router.get("/resources/:guildId", getGuildResources({ client }));
-  router.post("/send-embed", sendEmbed({ client }));
+  router.post("/send-message", sendMessage({ client }));
+  router.post("/validate-message", validateMessagePayload);
   router.post("/save-template", saveTemplate);
   router.get("/templates", getTemplates);
 

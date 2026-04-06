@@ -1,9 +1,21 @@
+// ============================================
+// SKY BOT S2 - Analytics Page
+// Modern SaaS UI
+// ============================================
+
 const elements = {
-  authArea: document.querySelector("#authArea"),
+  loadingState: document.querySelector("#loadingState"),
+  errorState: document.querySelector("#errorState"),
+  analyticsContent: document.querySelector("#analyticsContent"),
+  statusDot: document.querySelector("#statusDot"),
   statusText: document.querySelector("#statusText"),
-  analyticsApp: document.querySelector("#analyticsApp"),
-  analyticsSummary: document.querySelector("#analyticsSummary"),
-  analyticsGuildTable: document.querySelector("#analyticsGuildTable")
+  totalGuilds: document.querySelector("#totalGuilds"),
+  totalMembers: document.querySelector("#totalMembers"),
+  uptime: document.querySelector("#uptime"),
+  botUsername: document.querySelector("#botUsername"),
+  botId: document.querySelector("#botId"),
+  accessibleGuilds: document.querySelector("#accessibleGuilds"),
+  guildTableBody: document.querySelector("#guildTableBody")
 };
 
 async function request(path, options = {}) {
@@ -25,12 +37,12 @@ async function request(path, options = {}) {
 }
 
 function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return String(value || "")
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"')
+    .replace(/'/g, '&#039;');
 }
 
 function formatUptime(uptimeMs) {
@@ -38,99 +50,73 @@ function formatUptime(uptimeMs) {
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  return `${days}d ${hours}h ${minutes}m`;
+  
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }
 
-function setStatus(message) {
-  elements.statusText.textContent = message;
+function showError(message) {
+  elements.loadingState.classList.add('hidden');
+  elements.errorState.classList.remove('hidden');
+  elements.errorState.textContent = message;
 }
 
-function renderAuthUser(user) {
-  elements.authArea.innerHTML = `
-    <div class="auth-user auth-user-card">
-      <img class="auth-avatar" src="${escapeHtml(user.avatarUrl || "")}" alt="${escapeHtml(
-        user.username
-      )}" />
-      <div>
-        <div class="panel-subtitle">Signed in as</div>
-        <strong>${escapeHtml(user.username)}</strong>
-      </div>
-      <a class="ghost-button" href="./index.html">Builder</a>
-    </div>
-  `;
+function showContent() {
+  elements.loadingState.classList.add('hidden');
+  elements.errorState.classList.add('hidden');
+  elements.analyticsContent.classList.remove('hidden');
 }
 
 function renderAnalytics(analytics) {
-  elements.analyticsSummary.innerHTML = `
-    <div class="analytics-card">
-      <img class="analytics-bot-avatar" src="${escapeHtml(analytics.bot.avatarUrl)}" alt="${escapeHtml(
-        analytics.bot.username
-      )}" />
-      <div>
-        <div class="panel-subtitle">Bot</div>
-        <strong>${escapeHtml(analytics.bot.tag)}</strong>
-      </div>
-    </div>
-    <div class="analytics-card">
-      <div>
-        <div class="panel-subtitle">Uptime</div>
-        <strong>${formatUptime(analytics.bot.uptimeMs)}</strong>
-      </div>
-    </div>
-    <div class="analytics-card">
-      <div>
-        <div class="panel-subtitle">Joined Guilds</div>
-        <strong>${analytics.bot.guildCount}</strong>
-      </div>
-    </div>
-    <div class="analytics-card">
-      <div>
-        <div class="panel-subtitle">Accessible Guilds</div>
-        <strong>${analytics.totals.accessibleGuilds}</strong>
-      </div>
-    </div>
-    <div class="analytics-card">
-      <div>
-        <div class="panel-subtitle">Total Members</div>
-        <strong>${analytics.totals.memberCount}</strong>
-      </div>
-    </div>
-  `;
+  // Status
+  elements.statusText.textContent = "Online";
+  elements.statusDot.classList.remove('offline');
 
-  elements.analyticsGuildTable.innerHTML = `
-    <div class="analytics-table-head">
-      <span>Guild</span>
-      <span>Members</span>
-      <span>Channels</span>
-      <span>Roles</span>
-      <span>Owner ID</span>
-    </div>
-    ${analytics.guilds
-      .map(
-        (guild) => `
-          <div class="analytics-table-row">
-            <span>${escapeHtml(guild.name)}</span>
-            <span>${guild.memberCount}</span>
-            <span>${guild.channelCount}</span>
-            <span>${guild.roleCount}</span>
-            <span>${escapeHtml(guild.ownerId)}</span>
-          </div>
-        `
-      )
-      .join("")}
-  `;
+  // Stats
+  elements.totalGuilds.textContent = analytics.bot.guildCount;
+  elements.totalMembers.textContent = analytics.totals.memberCount.toLocaleString();
+  elements.uptime.textContent = formatUptime(analytics.bot.uptimeMs);
+
+  // Bot Info
+  elements.botUsername.textContent = analytics.bot.username;
+  elements.botId.textContent = analytics.bot.id;
+  elements.accessibleGuilds.textContent = analytics.totals.accessibleGuilds;
+
+  // Guild Table
+  elements.guildTableBody.innerHTML = analytics.guilds
+    .map(
+      (guild) => `
+        <tr>
+          <td>
+            <span class="guild-name">${escapeHtml(guild.name)}</span>
+          </td>
+          <td>${guild.memberCount.toLocaleString()}</td>
+          <td>${guild.channelCount}</td>
+          <td>${guild.roleCount}</td>
+          <td><span class="guild-id">${escapeHtml(guild.ownerId)}</span></td>
+        </tr>
+      `
+    )
+    .join("");
 }
 
 async function initialize() {
   try {
+    // Check authentication
     const session = await request("/auth/session");
-    renderAuthUser(session.user);
+    if (!session.authenticated) {
+      window.location.href = "./index.html";
+      return;
+    }
+
+    // Load analytics
     const analytics = await request("/api/analytics");
     renderAnalytics(analytics);
-    elements.analyticsApp.classList.remove("hidden");
-    setStatus("Ready");
+    showContent();
   } catch (error) {
-    setStatus(error.message);
+    console.error("Analytics error:", error);
+    showError(error.message || "Failed to load analytics");
   }
 }
 

@@ -6,13 +6,17 @@ const {
   fetchGuildChannels,
   fetchGuildResources,
   fetchBotAnalytics,
-  sendEmbedMessage
+  sendHybridMessage
 } = require("../services/discordService");
-const { validateEmbedRequest } = require("../middlewares/validators");
+const { validateMessage } = require("../middlewares/validators");
+const { filterAllowedGuilds } = require("../middlewares/requireRole");
 
 function getGuilds(req, res) {
-  const guilds = (req.session.guilds || []).filter(assertGuildAccess);
-  res.json(guilds);
+  // Filter guilds by permission and then by allowed guilds
+  const userAllowedGuilds = req.session.user?.allowedGuilds || [];
+  const guilds = req.session.guilds || [];
+  const filteredGuilds = filterAllowedGuilds(guilds, userAllowedGuilds);
+  res.json(filteredGuilds);
 }
 
 function getChannels({ client }) {
@@ -64,10 +68,10 @@ function getAnalytics({ client }) {
   };
 }
 
-function sendEmbed({ client }) {
+function sendMessage({ client }) {
   return async (req, res, next) => {
     try {
-      validateEmbedRequest(req.body);
+      validateMessage(req.body);
 
       const guilds = req.session.guilds || [];
       const guild = guilds.find((entry) => entry.id === req.body.guildId);
@@ -76,17 +80,31 @@ function sendEmbed({ client }) {
         return res.status(403).json({ error: "Unauthorized guild access." });
       }
 
-      const embed = buildEmbedPayload(req.body.embedData);
-      const components = buildButtonRows(req.body.buttons || []);
+      const messageType = req.body.messageType || "embed";
       const content = buildOutgoingContent({
         messageContent: req.body.messageContent,
         mentions: req.body.mentions || []
       });
-      const message = await sendEmbedMessage(client, {
+
+      // Build embed if needed
+      let embed = null;
+      if (messageType === "embed" || messageType === "hybrid") {
+        embed = buildEmbedPayload(req.body.embedData || {});
+      }
+
+      // Build components based on message type
+      let components = [];
+      if (messageType === "embed" || messageType === "hybrid") {
+        components = buildButtonRows(req.body.buttons || []);
+      }
+
+      const message = await sendHybridMessage(client, {
         channelId: req.body.channelId,
         content,
         embed,
         components,
+        componentsV2: req.body.componentsV2 || [],
+        messageType,
         reactions: req.body.reactions || []
       });
 
@@ -100,10 +118,23 @@ function sendEmbed({ client }) {
   };
 }
 
+function validateMessagePayload(req, res, next) {
+  try {
+    validateMessage(req.body);
+    return res.json({ valid: true });
+  } catch (error) {
+    return res.status(400).json({
+      valid: false,
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   getGuilds,
   getChannels,
   getGuildResources,
   getAnalytics,
-  sendEmbed
+  sendMessage,
+  validateMessagePayload
 };

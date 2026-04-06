@@ -7,6 +7,14 @@ const authRouter = require("./auth");
 const apiRouter = require("./api");
 const errorHandler = require("../middlewares/errorHandler");
 
+function getBotAvatarUrl(user) {
+  if (!user.avatar) {
+    const fallbackIndex = Number(user.discriminator || 0) % 5;
+    return `https://cdn.discordapp.com/embed/avatars/${fallbackIndex}.png`;
+  }
+  return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
+}
+
 function createApp({ client }) {
   const app = express();
 
@@ -26,6 +34,19 @@ function createApp({ client }) {
       }
     })
   );
+
+  // Store bot info in session for easy access
+  app.use((req, res, next) => {
+    if (client && client.user) {
+      req.session.bot = {
+        id: client.user.id,
+        username: client.user.username,
+        discriminator: client.user.discriminator,
+        avatarUrl: getBotAvatarUrl(client.user)
+      };
+    }
+    next();
+  });
 
   app.use("/auth", authRouter());
   app.use("/api", apiRouter({ client }));

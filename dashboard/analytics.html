@@ -3,63 +3,304 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SKY REALM | SKY BOT S2 Analytics</title>
-    <meta
-      name="description"
-      content="Analytics dashboard for the official SKY REALM SKY BOT S2 bot."
-    />
+    <title>SKY BOT S2 | Analytics</title>
+    <meta name="description" content="Analytics dashboard for the official SKY REALM SKY BOT S2 bot." />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.svg" />
     <link rel="manifest" href="./site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      /* Analytics-specific styles */
+      .analytics-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+      }
+
+      .analytics-content {
+        flex: 1;
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .analytics-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 32px;
+      }
+
+      .analytics-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .analytics-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: 4px;
+      }
+
+      .analytics-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+
+      .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .stat-value.small {
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+
+      .status-dot.offline {
+        background: var(--danger);
+      }
+
+      .analytics-section {
+        margin-bottom: 24px;
+      }
+
+      .analytics-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+      }
+
+      .guild-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .guild-table th,
+      .guild-table td {
+        text-align: left;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .guild-table th {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        background: var(--bg-tertiary);
+      }
+
+      .guild-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .guild-table tr:hover td {
+        background: var(--bg-hover);
+      }
+
+      .guild-name {
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .guild-id {
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .loading-state {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 64px;
+        color: var(--text-secondary);
+      }
+
+      .error-state {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        color: var(--danger);
+        margin-bottom: 24px;
+      }
+
+      @media (max-width: 640px) {
+        .analytics-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        .analytics-stats {
+          grid-template-columns: 1fr;
+        }
+
+        .guild-table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div class="page-shell">
-      <div class="workspace-canvas analytics-canvas">
-        <section class="topbar">
+    <div class="analytics-page">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-logo">
+            <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" rx="12" fill="url(#topbarGradient)" />
+              <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+              <defs>
+                <linearGradient id="topbarGradient" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#5865F2" />
+                  <stop offset="1" stop-color="#7C3AED" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="topbar-title">SKY BOT S2</span>
+        </div>
+
+        <div class="topbar-right">
+          <a href="./index.html" class="topbar-icon-btn" title="Back to Builder">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5"></path>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="analytics-content">
+        <div class="analytics-header">
           <div>
-            <p class="eyebrow">Official SKY REALM Control Panel</p>
-            <h1>SKY BOT S2 analytics.</h1>
+            <h1 class="analytics-title">Analytics</h1>
+            <p class="analytics-subtitle">Bot performance and server statistics</p>
           </div>
-          <div class="hero-actions" id="authArea">
-            <a class="ghost-button" href="./index.html">Builder</a>
-          </div>
-        </section>
+        </div>
 
-        <section class="hero-card">
-          <div class="hero-copy-block">
-            <div class="hero-icon">A</div>
-            <div>
-              <h2>Bot and server analytics</h2>
-              <p class="hero-copy">
-                Review uptime, joined guilds, member totals, and server details for SKY BOT S2.
-              </p>
-            </div>
-          </div>
-          <div class="hero-stats">
+        <div id="loadingState" class="loading-state">
+          <span>Loading analytics...</span>
+        </div>
+
+        <div id="errorState" class="error-state hidden"></div>
+
+        <div id="analyticsContent" class="hidden">
+          <!-- Stats Overview -->
+          <div class="analytics-stats">
             <div class="stat-card">
-              <span class="panel-subtitle">Status</span>
-              <strong id="statusText">Loading</strong>
+              <div class="stat-label">Bot Status</div>
+              <div class="stat-value">
+                <span class="status-indicator">
+                  <span class="status-dot" id="statusDot"></span>
+                  <span id="statusText">Online</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Total Guilds</div>
+              <div class="stat-value" id="totalGuilds">0</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Total Members</div>
+              <div class="stat-value" id="totalMembers">0</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Uptime</div>
+              <div class="stat-value small" id="uptime">0h 0m</div>
             </div>
           </div>
-        </section>
 
-        <section class="analytics-layout hidden" id="analyticsApp">
-          <section id="analyticsSummary" class="analytics-summary"></section>
-          <section class="panel analytics-panel">
-            <div class="panel-header">
-              <h2>Guild Breakdown</h2>
+          <!-- Bot Info -->
+          <div class="analytics-section">
+            <h2 class="analytics-section-title">Bot Information</h2>
+            <div class="stat-card">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div>
+                  <div class="stat-label">Username</div>
+                  <div class="stat-value small" id="botUsername">-</div>
+                </div>
+                <div>
+                  <div class="stat-label">Bot ID</div>
+                  <div class="stat-value small guild-id" id="botId">-</div>
+                </div>
+                <div>
+                  <div class="stat-label">Accessible Guilds</div>
+                  <div class="stat-value small" id="accessibleGuilds">0</div>
+                </div>
+              </div>
             </div>
-            <div id="analyticsGuildTable" class="analytics-table"></div>
-          </section>
-        </section>
-      </div>
+          </div>
+
+          <!-- Guild Breakdown -->
+          <div class="analytics-section">
+            <h2 class="analytics-section-title">Guild Breakdown</h2>
+            <div class="panel" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;">
+              <table class="guild-table">
+                <thead>
+                  <tr>
+                    <th>Guild Name</th>
+                    <th>Members</th>
+                    <th>Channels</th>
+                    <th>Roles</th>
+                    <th>Owner</th>
+                  </tr>
+                </thead>
+                <tbody id="guildTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
 
     <script src="./analytics.js" type="module"></script>

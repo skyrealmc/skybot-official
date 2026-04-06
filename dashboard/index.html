@@ -3,200 +3,390 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SKY REALM | SKY BOT S2 Dashboard</title>
-    <meta
-      name="description"
-      content="Official SKY REALM Minecraft community control panel for SKY BOT S2, built by chriz3656."
-    />
+    <title>SKY BOT S2 | Control Panel</title>
+    <meta name="description" content="Official SKY REALM Discord bot control panel" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.svg" />
     <link rel="manifest" href="./site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="page-shell">
-      <div class="workspace-canvas">
-          <section class="topbar">
-            <div>
-              <p class="eyebrow">Official SKY REALM Control Panel</p>
-              <h1>SKY BOT S2 dashboard.</h1>
+    <!-- Login Page (shown when not authenticated) -->
+    <div class="login-page" id="loginPage">
+      <div class="login-split">
+        <!-- Left Panel - Brand -->
+        <div class="login-brand-panel">
+          <div class="brand-content">
+            <div class="brand-logo">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="48" rx="12" fill="url(#brandGradient)" />
+                <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                <defs>
+                  <linearGradient id="brandGradient" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#5865F2" />
+                    <stop offset="1" stop-color="#7C3AED" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
-            <div class="hero-actions" id="authArea">
-              <a class="primary-button" href="/auth/login">Login with Discord</a>
-              <a class="ghost-button" href="./analytics.html">Analytics</a>
+            <h1 class="brand-title">SKY REALM</h1>
+            <p class="brand-tagline">Control Panel</p>
+            <div class="brand-features">
+              <div class="feature-item">
+                <span class="feature-icon">✦</span>
+                <span>Hybrid Message Builder</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">⚡</span>
+                <span>Real-time Preview</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">🎨</span>
+                <span>Components V2 Support</span>
+              </div>
             </div>
-          </section>
+          </div>
+          <div class="brand-footer">
+            <p>Manage your Discord bot like a pro</p>
+          </div>
+        </div>
 
-          <section class="hero-card">
-            <div class="hero-copy-block">
-              <div class="hero-icon">+</div>
-              <div>
-                <h2>Manage the official SKY REALM community bot</h2>
-                <p class="hero-copy">
-                  Control panel creator by chriz3656 for the official SKY REALM
-                  Minecraft community, with live preview, templates, and bot message tools.
-                </p>
+        <!-- Right Panel - Login -->
+        <div class="login-form-panel">
+          <div class="login-card">
+            <div class="login-card-header">
+              <div class="login-logo">
+                <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="48" height="48" rx="12" fill="#5865F2" />
+                  <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
               </div>
+              <h2 class="login-heading">Welcome back</h2>
+              <p class="login-subheading">Sign in to access your control panel</p>
             </div>
-            <div class="hero-stats">
-              <div class="stat-card">
-                <span class="panel-subtitle">Mode</span>
-                <strong>SKY BOT S2</strong>
-              </div>
-              <div class="stat-card">
-                <span class="panel-subtitle">Status</span>
-                <strong id="statusText">Idle</strong>
-              </div>
+
+            <a href="/auth/login" class="discord-login-btn" id="loginBtn">
+              <svg class="discord-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+              </svg>
+              <span>Continue with Discord</span>
+            </a>
+
+            <p class="login-note">Secure login via Discord OAuth2</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard (shown when authenticated) -->
+    <div class="dashboard-page hidden" id="dashboardPage">
+      <!-- Compact Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-logo">
+            <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" rx="12" fill="url(#topbarGradient)" />
+              <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+              <defs>
+                <linearGradient id="topbarGradient" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#5865F2" />
+                  <stop offset="1" stop-color="#7C3AED" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="topbar-title">SKY BOT S2</span>
+        </div>
+
+        <div class="topbar-center">
+          <select class="guild-selector" id="guildSelect">
+            <option value="">Select a server...</option>
+          </select>
+        </div>
+
+        <div class="topbar-right">
+          <a href="./analytics.html" class="topbar-icon-btn" title="Analytics">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </a>
+          <div class="topbar-user">
+            <img class="topbar-avatar" id="userAvatar" src="" alt="User avatar" />
+            <span class="topbar-username" id="username"></span>
+          </div>
+          <button class="topbar-icon-btn" id="logoutBtn" title="Logout">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-tabs">
+          <button class="toolbar-tab active" data-tab="embed">Embed</button>
+          <button class="toolbar-tab" data-tab="components">Components</button>
+          <button class="toolbar-tab" data-tab="components-v2">Components V2</button>
+          <button class="toolbar-tab" data-tab="settings">Settings</button>
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn-secondary" id="saveTemplateBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Save</span>
+          </button>
+          <button class="btn-primary" id="sendMessageBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            <span>Send</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <main class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-section">
+            <span class="sidebar-label">Quick Templates</span>
+            <div class="quick-templates">
+              <button class="quick-template-btn" data-template="server-online">
+                <span class="qt-icon">🟢</span>
+                <span>Server Online</span>
+              </button>
+              <button class="quick-template-btn" data-template="server-offline">
+                <span class="qt-icon">🔴</span>
+                <span>Server Offline</span>
+              </button>
+              <button class="quick-template-btn" data-template="server-restart">
+                <span class="qt-icon">🔄</span>
+                <span>Restart</span>
+              </button>
+              <button class="quick-template-btn" data-template="event-announce">
+                <span class="qt-icon">📢</span>
+                <span>Event</span>
+              </button>
             </div>
-          </section>
+          </div>
 
-          <section class="workspace-layout hidden" id="dashboardApp">
-            <aside class="channel-sidebar">
-              <div class="channel-sidebar-header">
-                <span class="panel-subtitle">Server</span>
-                <strong id="channelSidebarGuildName">Select a guild</strong>
-              </div>
-              <div class="channel-sidebar-body">
-                <div class="channel-group">
-                  <div class="channel-group-title">Text Channels</div>
-                  <div id="channelNav" class="channel-nav"></div>
-                </div>
-                <div class="channel-group">
-                  <div class="channel-group-title">Overview</div>
-                  <div class="status-pill">Live Workspace</div>
-                </div>
-              </div>
-            </aside>
+          <div class="sidebar-section">
+            <span class="sidebar-label">Saved Templates</span>
+            <div id="templatesList" class="template-list"></div>
+          </div>
+        </aside>
 
-            <main class="dashboard-grid">
-              <section class="panel">
+        <!-- Builder -->
+        <div class="builder-area">
+          <div class="tab-content">
+            <!-- Embed Tab -->
+            <div class="tab-panel active" id="tab-embed">
+              <div class="panel">
                 <div class="panel-header">
-                  <h2>Workspace</h2>
-                  <button class="ghost-button" id="logoutButton" type="button">Logout</button>
+                  <h3>Embed Builder</h3>
                 </div>
                 <div class="field-grid">
-                  <label>
-                    Message content
-                    <textarea id="messageContent" rows="3" placeholder="Text that appears above the embed"></textarea>
+                  <label class="full-width">
+                    <span>Title</span>
+                    <input id="title" type="text" maxlength="256" placeholder="Embed title" />
+                  </label>
+                  <label class="full-width">
+                    <span>Description</span>
+                    <textarea id="description" rows="4" placeholder="Embed description"></textarea>
                   </label>
                   <label>
-                    Guild
-                    <select id="guildSelect"></select>
+                    <span>Color</span>
+                    <input id="color" type="color" value="#5865f2" />
                   </label>
                   <label>
-                    Channel
-                    <select id="channelSelect"></select>
+                    <span>Author</span>
+                    <input id="author" type="text" placeholder="Embed author" />
                   </label>
                   <label>
-                    Template name
-                    <input id="templateName" type="text" placeholder="Promotion banner" />
+                    <span>Footer</span>
+                    <input id="footer" type="text" placeholder="Embed footer" />
                   </label>
-                  <div class="button-row">
-                    <button class="secondary-button" id="saveTemplateButton" type="button">
-                      Save Template
-                    </button>
-                    <button class="primary-button" id="sendEmbedButton" type="button">
-                      Send Embed
-                    </button>
-                  </div>
-                </div>
-                <div class="template-list">
-                  <div class="panel-subtitle">Saved templates</div>
-                  <div id="templatesList" class="template-items"></div>
-                </div>
-              </section>
-
-              <section class="panel">
-                <div class="panel-header">
-                  <h2>Embed Builder</h2>
-                </div>
-                <div class="field-grid">
-                  <label>Title <input id="title" type="text" maxlength="256" /></label>
                   <label>
-                    Description
-                    <textarea id="description" rows="5"></textarea>
+                    <span>Image URL</span>
+                    <input id="image" type="url" placeholder="https://..." />
                   </label>
-                  <label>Color <input id="color" type="color" value="#5865f2" /></label>
-                  <label>Author <input id="author" type="text" /></label>
-                  <label>Footer <input id="footer" type="text" /></label>
-                  <label>Image URL <input id="image" type="url" /></label>
-                  <label>Thumbnail URL <input id="thumbnail" type="url" /></label>
-                  <label class="checkbox">
+                  <label>
+                    <span>Thumbnail URL</span>
+                    <input id="thumbnail" type="url" placeholder="https://..." />
+                  </label>
+                  <label class="checkbox-label">
                     <input id="timestamp" type="checkbox" />
-                    Include timestamp
+                    <span>Include timestamp</span>
                   </label>
                 </div>
-              </section>
+              </div>
+            </div>
 
-              <section class="panel">
+            <!-- Components Tab -->
+            <div class="tab-panel" id="tab-components">
+              <div class="panel">
                 <div class="panel-header">
-                  <h2>Buttons</h2>
-                  <button class="secondary-button" id="addButtonButton" type="button">
+                  <h3>Buttons</h3>
+                  <button class="btn-secondary-sm" id="addButtonBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
                     Add Button
                   </button>
                 </div>
                 <div id="buttonsContainer" class="buttons-builder"></div>
-                <div class="panel-spacer"></div>
+              </div>
+            </div>
+
+            <!-- Components V2 Tab -->
+            <div class="tab-panel" id="tab-components-v2">
+              <div class="panel">
                 <div class="panel-header">
-                  <h2>Mentions</h2>
-                  <button class="secondary-button" id="addMentionButton" type="button">
+                  <h3>Components V2</h3>
+                  <button class="btn-secondary-sm" id="addContainerBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Container
+                  </button>
+                </div>
+                <div id="containersContainer" class="containers-builder"></div>
+              </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-panel" id="tab-settings">
+              <div class="panel">
+                <div class="panel-header">
+                  <h3>Message Settings</h3>
+                </div>
+                <div class="field-grid">
+                  <label class="full-width">
+                    <span>Message Content</span>
+                    <textarea id="messageContent" rows="3" placeholder="Text above the embed"></textarea>
+                  </label>
+                  <label>
+                    <span>Channel</span>
+                    <select id="channelSelect">
+                      <option value="">Select a channel...</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Template Name</span>
+                    <input id="templateName" type="text" placeholder="My template" />
+                  </label>
+                  <label>
+                    <span>Message Type</span>
+                    <select id="messageType">
+                      <option value="embed">Embed Only</option>
+                      <option value="hybrid">Hybrid (Embed + Components)</option>
+                      <option value="v2">Components V2 Only</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel-header">
+                  <h3>Mentions</h3>
+                  <button class="btn-secondary-sm" id="addMentionBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
                     Add Mention
                   </button>
                 </div>
                 <div id="mentionsContainer" class="mentions-builder"></div>
-                <label class="inline-field">
-                  Reactions
+              </div>
+
+              <div class="panel">
+                <div class="panel-header">
+                  <h3>Reactions</h3>
+                </div>
+                <label>
+                  <span>Reactions (comma separated)</span>
                   <input id="reactionsInput" type="text" placeholder="🔥, ✅, 🎉" />
                 </label>
-              </section>
+              </div>
+            </div>
+          </div>
+        </div>
 
-              <section class="panel preview-panel">
-                <div class="panel-header">
-                  <h2>Live Preview</h2>
-                  <span class="status-pill">Discord View</span>
-                </div>
-                <div id="previewCard" class="discord-preview"></div>
-              </section>
-            </main>
-          </section>
-      </div>
+        <!-- Preview -->
+        <aside class="preview-panel">
+          <div class="preview-header">
+            <h3>Preview</h3>
+            <div class="preview-toggle">
+              <button class="toggle-btn active" data-view="builder">Builder</button>
+              <button class="toggle-btn" data-view="discord">Discord</button>
+            </div>
+          </div>
+          <div id="previewCard" class="preview-card"></div>
+        </aside>
+      </main>
     </div>
 
+    <!-- Templates -->
     <template id="buttonTemplate">
       <div class="button-config">
+        <div class="config-row">
+          <label>
+            <span>Type</span>
+            <select data-button-field="type">
+              <option value="link">Link</option>
+              <option value="interaction">Interaction</option>
+            </select>
+          </label>
+          <label>
+            <span>Style</span>
+            <select data-button-field="style">
+              <option value="Primary">Primary</option>
+              <option value="Secondary">Secondary</option>
+              <option value="Success">Success</option>
+              <option value="Danger">Danger</option>
+              <option value="Link">Link</option>
+            </select>
+          </label>
+        </div>
         <label>
-          Type
-          <select data-button-field="type">
-            <option value="link">Link</option>
-            <option value="interaction">Interaction</option>
-          </select>
-        </label>
-        <label>
-          Label
-          <input data-button-field="label" type="text" maxlength="80" />
+          <span>Label</span>
+          <input data-button-field="label" type="text" maxlength="80" placeholder="Button text" />
         </label>
         <label data-role="url">
-          URL
-          <input data-button-field="url" type="url" />
+          <span>URL</span>
+          <input data-button-field="url" type="url" placeholder="https://..." />
         </label>
         <label data-role="customId" class="hidden">
-          Custom ID
-          <input data-button-field="customId" type="text" maxlength="100" />
+          <span>Custom ID</span>
+          <input data-button-field="customId" type="text" maxlength="100" placeholder="custom_id" />
         </label>
-        <button class="ghost-button remove-button" type="button">Remove</button>
+        <label>
+          <span>Emoji</span>
+          <input data-button-field="emoji" type="text" placeholder="🔥 or name:id" />
+        </label>
+        <button class="btn-remove" type="button">Remove</button>
       </div>
     </template>
 
     <template id="mentionTemplate">
       <div class="mention-config">
         <label>
-          Type
+          <span>Type</span>
           <select data-mention-field="type">
             <option value="member">Member</option>
             <option value="role">Role</option>
@@ -206,10 +396,54 @@
           </select>
         </label>
         <label data-role="target">
-          Target
+          <span>Target</span>
           <select data-mention-field="id"></select>
         </label>
-        <button class="ghost-button remove-mention" type="button">Remove</button>
+        <button class="btn-remove" type="button">Remove</button>
+      </div>
+    </template>
+
+    <template id="containerTemplate">
+      <div class="container-config">
+        <div class="container-header">
+          <span class="container-title">Container</span>
+          <div class="container-actions">
+            <button class="btn-icon-sm add-item-btn" type="button" title="Add Item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+            <button class="btn-icon-sm remove-container-btn" type="button" title="Remove">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="container-items"></div>
+      </div>
+    </template>
+
+    <template id="containerItemTemplate">
+      <div class="container-item-config">
+        <div class="item-header">
+          <select data-item-field="type" class="item-type-select">
+            <option value="text">Text</option>
+            <option value="image">Image</option>
+            <option value="media">Media (GIF/Video)</option>
+            <option value="button">Button</option>
+            <option value="separator">Separator</option>
+          </select>
+          <button class="btn-icon-sm remove-item-btn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="item-fields"></div>
       </div>
     </template>
 
