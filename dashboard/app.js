@@ -52,8 +52,52 @@ const elements = {
   messageType: document.querySelector("#messageType"),
   userAvatar: document.querySelector("#userAvatar"),
   username: document.querySelector("#username"),
-  logoutBtn: document.querySelector("#logoutBtn")
+  logoutBtn: document.querySelector("#logoutBtn"),
+  importTemplateBtn: document.querySelector("#importTemplateBtn"),
+  importFileInput: document.querySelector("#importFileInput")
 };
+
+// Toast notification container
+let toastContainer = null;
+
+function initToastContainer() {
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.className = "toast-container";
+    document.body.appendChild(toastContainer);
+  }
+}
+
+function showToast(message, type = "info") {
+  initToastContainer();
+
+  const icons = {
+    success: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    error: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+    info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5865f2" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+  };
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type]}</span>
+    <span class="toast-message">${escapeHtml(message)}</span>
+    <button class="toast-close" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  `;
+
+  toast.querySelector(".toast-close").addEventListener("click", () => removeToast(toast));
+  toastContainer.appendChild(toast);
+
+  // Auto remove after 5 seconds
+  setTimeout(() => removeToast(toast), 5000);
+}
+
+function removeToast(toast) {
+  toast.classList.add("hiding");
+  setTimeout(() => toast.remove(), 300);
+}
 
 // ============================================
 // Utility Functions
@@ -659,10 +703,39 @@ function renderTemplates() {
   elements.templatesList.innerHTML = state.templates
     .map(
       (template) => `
-        <button class="template-chip" type="button" data-template-id="${template._id}">
-          <span>${escapeHtml(template.name)}</span>
-          <span style="color: var(--text-muted); font-size: 0.75rem;">${new Date(template.createdAt).toLocaleDateString()}</span>
-        </button>
+        <div class="template-chip" data-template-id="${template._id}">
+          <div class="template-chip-info">
+            <span class="template-chip-name">${escapeHtml(template.name)}</span>
+            <span class="template-chip-date">${new Date(template.createdAt).toLocaleDateString()}</span>
+          </div>
+          <div class="template-chip-actions">
+            <button class="template-chip-action-btn" data-action="export" title="Export">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </button>
+            <button class="template-chip-action-btn" data-action="duplicate" title="Duplicate">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+            <button class="template-chip-action-btn" data-action="rename" title="Rename">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="template-chip-action-btn danger" data-action="delete" title="Delete">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
       `
     )
     .join("");
@@ -817,15 +890,29 @@ async function saveTemplate() {
 }
 
 async function sendMessage() {
+  const btn = elements.sendMessageBtn;
+  const spinner = btn.querySelector(".btn-spinner");
+  const icon = btn.querySelector(".btn-icon");
+  const text = btn.querySelector(".btn-text");
+
+  // Check if already sending
+  if (btn.classList.contains("sending")) return;
+
+  const guildId = elements.guildSelect.value;
+  const channelId = elements.channelSelect.value;
+
+  if (!guildId || !channelId) {
+    showToast("Please select a guild and channel", "error");
+    return;
+  }
+
+  // Set sending state
+  btn.classList.add("sending");
+  text.textContent = "Sending...";
+  icon.style.display = "none";
+  spinner.style.display = "inline-block";
+
   try {
-    const guildId = elements.guildSelect.value;
-    const channelId = elements.channelSelect.value;
-
-    if (!guildId || !channelId) {
-      alert("Please select a guild and channel");
-      return;
-    }
-
     const response = await request("/api/send-message", {
       method: "POST",
       body: JSON.stringify({
@@ -840,15 +927,102 @@ async function sendMessage() {
         reactions: getSerializableReactions()
       })
     });
-    console.log("Message sent:", response.messageId);
+
+    showToast("Message sent successfully!", "success");
   } catch (error) {
-    console.error("Send failed:", error.message);
+    showToast(error.message || "Failed to send message", "error");
+  } finally {
+    // Reset button state
+    btn.classList.remove("sending");
+    text.textContent = "Send";
+    icon.style.display = "";
+    spinner.style.display = "none";
   }
 }
 
 async function logout() {
   await request("/auth/logout", { method: "POST" });
   window.location.reload();
+}
+
+// ============================================
+// Template Actions
+// ============================================
+
+async function handleTemplateAction(templateId, action) {
+  const template = state.templates.find(t => t._id === templateId);
+  if (!template) return;
+
+  try {
+    switch (action) {
+      case "export":
+        await exportTemplate(templateId, template.name);
+        break;
+      case "duplicate":
+        await duplicateTemplate(templateId);
+        break;
+      case "rename":
+        await renameTemplate(templateId, template.name);
+        break;
+      case "delete":
+        await deleteTemplate(templateId);
+        break;
+    }
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+async function exportTemplate(templateId, templateName) {
+  const response = await fetch(`/api/templates/${templateId}/export`, {
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "Failed to export template");
+  }
+
+  // Create download link
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${templateName.replace(/[^a-z0-9]/gi, "-")}.json`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+
+  showToast("Template exported successfully!", "success");
+}
+
+async function duplicateTemplate(templateId) {
+  await request(`/api/templates/${templateId}/duplicate`, { method: "POST" });
+  await loadTemplates();
+  showToast("Template duplicated!", "success");
+}
+
+async function renameTemplate(templateId, currentName) {
+  const newName = prompt("Enter new template name:", currentName);
+  if (!newName || newName.trim() === currentName) return;
+
+  await request(`/api/templates/${templateId}/rename`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: newName.trim() })
+  });
+
+  await loadTemplates();
+  showToast("Template renamed!", "success");
+}
+
+async function deleteTemplate(templateId) {
+  if (!confirm("Are you sure you want to delete this template?")) return;
+
+  await request(`/api/templates/${templateId}`, { method: "DELETE" });
+  await loadTemplates();
+  showToast("Template deleted!", "success");
 }
 
 // ============================================
@@ -940,16 +1114,60 @@ async function initialize() {
     });
   });
 
-  // Template list click handler
+  // Template list click and action handler
   if (elements.templatesList) {
     elements.templatesList.addEventListener("click", (event) => {
-      const target = event.target.closest("[data-template-id]");
-      if (!target) return;
+      const chip = event.target.closest("[data-template-id]");
+      if (!chip) return;
 
-      const template = state.templates.find((entry) => entry._id === target.dataset.templateId);
-      if (template) {
-        applyTemplate(template);
+      const templateId = chip.dataset.templateId;
+      const actionBtn = event.target.closest("[data-action]");
+
+      if (actionBtn) {
+        // Handle action button click
+        event.stopPropagation();
+        const action = actionBtn.dataset.action;
+        handleTemplateAction(templateId, action);
+      } else {
+        // Apply template on chip click
+        const template = state.templates.find((entry) => entry._id === templateId);
+        if (template) {
+          applyTemplate(template);
+          showToast(`Applied template: ${template.name}`, "success");
+        }
       }
+    });
+  }
+
+  // Import template button
+  if (elements.importTemplateBtn) {
+    elements.importTemplateBtn.addEventListener("click", () => {
+      elements.importFileInput.click();
+    });
+  }
+
+  if (elements.importFileInput) {
+    elements.importFileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        await request("/api/import-template", {
+          method: "POST",
+          body: JSON.stringify(data)
+        });
+
+        await loadTemplates();
+        showToast("Template imported successfully!", "success");
+      } catch (error) {
+        showToast(error.message || "Failed to import template", "error");
+      }
+
+      // Reset file input
+      e.target.value = "";
     });
   }
 
