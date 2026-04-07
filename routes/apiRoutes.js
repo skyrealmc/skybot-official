@@ -19,6 +19,15 @@ const {
   importTemplate,
   duplicateTemplate
 } = require("../controllers/templateController");
+const {
+  getSchedules,
+  getSchedule,
+  createSchedule,
+  updateSchedule,
+  deleteSchedule,
+  toggleSchedule,
+  getScheduleStats
+} = require("../controllers/scheduleController");
 
 function createApiRouter({ client }) {
   const router = express.Router();
@@ -36,6 +45,7 @@ function createApiRouter({ client }) {
   router.get("/analytics", getAnalytics({ client }));
   router.get("/channels/:guildId", getChannels({ client }));
   router.get("/resources/:guildId", getGuildResources({ client }));
+  router.get("/guild-resources/:guildId", getGuildResources({ client }));
   router.post("/send-message", sendMessage({ client }));
   router.post("/validate-message", validateMessagePayload);
 
@@ -47,6 +57,15 @@ function createApiRouter({ client }) {
   router.patch("/templates/:templateId/rename", renameTemplate);
   router.delete("/templates/:templateId", deleteTemplate);
   router.post("/templates/:templateId/duplicate", duplicateTemplate);
+
+  // Schedule routes
+  router.get("/schedules", getSchedules);
+  router.get("/schedules/stats", getScheduleStats);
+  router.get("/schedules/:id", getSchedule);
+  router.post("/schedules", createSchedule);
+  router.put("/schedules/:id", updateSchedule);
+  router.delete("/schedules/:id", deleteSchedule);
+  router.post("/schedules/:id/toggle", toggleSchedule);
 
   return router;
 }

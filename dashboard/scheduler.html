@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SKY BOT S2 | Message Scheduler</title>
+    <meta name="description" content="Schedule messages for your Discord server" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      /* Scheduler-specific styles */
+      .scheduler-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+      }
+
+      .scheduler-layout {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 0;
+        min-height: 0;
+      }
+
+      .scheduler-sidebar {
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .scheduler-sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .scheduler-sidebar-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .scheduler-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .stat-item {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .stat-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-top: 4px;
+      }
+
+      .schedule-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .schedule-item {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        cursor: pointer;
+        transition: all var(--transition);
+      }
+
+      .schedule-item:hover {
+        background: var(--bg-hover);
+        border-color: var(--border-hover);
+      }
+
+      .schedule-item.active {
+        border-color: var(--accent);
+      }
+
+      .schedule-item-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .schedule-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .schedule-status {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .schedule-status.active {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--success);
+      }
+
+      .schedule-status.paused {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--warning);
+      }
+
+      .schedule-status.completed {
+        background: rgba(107, 114, 128, 0.2);
+        color: var(--text-muted);
+      }
+
+      .schedule-status.failed {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+      }
+
+      .schedule-next-run {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+
+      .schedule-actions {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+        opacity: 0;
+        transition: opacity var(--transition);
+      }
+
+      .schedule-item:hover .schedule-actions {
+        opacity: 1;
+      }
+
+      .scheduler-content {
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      .scheduler-form {
+        max-width: 700px;
+        margin: 0 auto;
+      }
+
+      .scheduler-section {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+
+      .scheduler-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .schedule-type-toggle {
+        display: flex;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-sm);
+        padding: 2px;
+        margin-bottom: 20px;
+      }
+
+      .toggle-option {
+        flex: 1;
+        padding: 10px;
+        text-align: center;
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition);
+      }
+
+      .toggle-option.active {
+        background: var(--accent);
+        color: white;
+      }
+
+      .cron-input-group {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+      }
+
+      .cron-input-group label {
+        flex: 1;
+      }
+
+      .cron-presets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .cron-preset {
+        padding: 6px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all var(--transition);
+      }
+
+      .cron-preset:hover {
+        background: var(--bg-hover);
+        border-color: var(--border-hover);
+        color: var(--text-primary);
+      }
+
+      .cron-preset.active {
+        background: var(--accent-light);
+        border-color: var(--accent-border);
+        color: var(--accent);
+      }
+
+      .scheduler-form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 64px;
+        color: var(--text-muted);
+        text-align: center;
+      }
+
+      .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+
+      .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+      }
+
+      .empty-state-text {
+        font-size: 0.9rem;
+        max-width: 300px;
+      }
+
+      .mentions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .mention-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: var(--accent-light);
+        border: 1px solid var(--accent-border);
+        border-radius: 20px;
+        font-size: 0.85rem;
+        color: var(--accent);
+      }
+
+      .mention-chip button {
+        background: none;
+        border: none;
+        color: var(--accent);
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        opacity: 0.7;
+        transition: opacity var(--transition);
+      }
+
+      .mention-chip button:hover {
+        opacity: 1;
+      }
+
+      @media (max-width: 768px) {
+        .scheduler-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .scheduler-sidebar {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          max-height: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scheduler-page">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-logo">
+            <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" rx="12" fill="url(#topbarGradient)" />
+              <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+              <defs>
+                <linearGradient id="topbarGradient" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#5865F2" />
+                  <stop offset="1" stop-color="#7C3AED" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="topbar-title">SKY BOT S2</span>
+          <span style="color: var(--text-muted); margin: 0 8px;">/</span>
+          <span style="color: var(--text-secondary); font-size: 0.9rem;">Message Scheduler</span>
+        </div>
+
+        <div class="topbar-right">
+          <a href="/" class="topbar-icon-btn" title="Back to Builder">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5"></path>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="scheduler-layout">
+        <!-- Sidebar -->
+        <aside class="scheduler-sidebar">
+          <div class="scheduler-sidebar-header">
+            <span class="scheduler-sidebar-title">Schedules</span>
+            <button class="btn-secondary-sm" id="newScheduleBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              New
+            </button>
+          </div>
+
+          <div class="scheduler-stats">
+            <div class="stat-item">
+              <div class="stat-value" id="statActive">0</div>
+              <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="statTotal">0</div>
+              <div class="stat-label">Total</div>
+            </div>
+          </div>
+
+          <div id="scheduleList" class="schedule-list">
+            <!-- Schedule items will be rendered here -->
+          </div>
+        </aside>
+
+        <!-- Content -->
+        <div class="scheduler-content">
+          <div id="emptyState" class="empty-state">
+            <div class="empty-state-icon">📅</div>
+            <h2 class="empty-state-title">No schedules yet</h2>
+            <p class="empty-state-text">Create your first scheduled message to get started</p>
+          </div>
+
+          <form id="scheduleForm" class="scheduler-form hidden">
+            <!-- Basic Info -->
+            <div class="scheduler-section">
+              <h3 class="scheduler-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                Basic Information
+              </h3>
+
+              <div class="field-grid">
+                <label class="full-width">
+                  <span>Schedule Name</span>
+                  <input id="scheduleName" type="text" maxlength="100" placeholder="My scheduled message" required />
+                </label>
+
+                <label>
+                  <span>Guild</span>
+                  <select id="scheduleGuild" required>
+                    <option value="">Select a server...</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Channel</span>
+                  <select id="scheduleChannel" required>
+                    <option value="">Select a channel...</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <!-- Schedule Type -->
+            <div class="scheduler-section">
+              <h3 class="scheduler-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Schedule Type
+              </h3>
+
+              <div class="schedule-type-toggle">
+                <button type="button" class="toggle-option active" data-type="one_time">One Time</button>
+                <button type="button" class="toggle-option" data-type="recurring">Recurring</button>
+              </div>
+
+              <!-- One-time schedule fields -->
+              <div id="oneTimeFields">
+                <label>
+                  <span>Scheduled Date & Time</span>
+                  <input id="scheduledAt" type="datetime-local" />
+                </label>
+              </div>
+
+              <!-- Recurring schedule fields -->
+              <div id="recurringFields" class="hidden">
+                <div class="cron-input-group">
+                  <label>
+                    <span>Cron Expression</span>
+                    <input id="cronExpression" type="text" placeholder="0 9 * * 1" />
+                  </label>
+                  <label>
+                    <span>Timezone</span>
+                    <select id="timezone">
+                      <option value="UTC">UTC</option>
+                      <option value="America/New_York">Eastern Time</option>
+                      <option value="America/Chicago">Central Time</option>
+                      <option value="America/Denver">Mountain Time</option>
+                      <option value="America/Los_Angeles">Pacific Time</option>
+                      <option value="Europe/London">London</option>
+                      <option value="Europe/Paris">Paris</option>
+                      <option value="Asia/Tokyo">Tokyo</option>
+                      <option value="Asia/Shanghai">Shanghai</option>
+                      <option value="Australia/Sydney">Sydney</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="cron-presets">
+                  <button type="button" class="cron-preset" data-cron="0 9 * * *">Daily at 9 AM</button>
+                  <button type="button" class="cron-preset" data-cron="0 12 * * *">Daily at 12 PM</button>
+                  <button type="button" class="cron-preset" data-cron="0 9 * * 1">Every Monday 9 AM</button>
+                  <button type="button" class="cron-preset" data-cron="0 */6 * * *">Every 6 hours</button>
+                  <button type="button" class="cron-preset" data-cron="0 */1 * * *">Every hour</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Message Configuration -->
+            <div class="scheduler-section">
+              <h3 class="scheduler-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Message Configuration
+              </h3>
+
+              <div class="field-grid">
+                <label>
+                  <span>Message Type</span>
+                  <select id="messageType">
+                    <option value="embed">Embed Only</option>
+                    <option value="hybrid">Hybrid (Embed + Components)</option>
+                    <option value="components_v2">Components V2 Only</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Use Template</span>
+                  <select id="useTemplate">
+                    <option value="">None - Create new</option>
+                  </select>
+                </label>
+
+                <label class="full-width">
+                  <span>Message Content</span>
+                  <textarea id="messageContent" rows="3" placeholder="Text content above the embed"></textarea>
+                </label>
+              </div>
+
+              <!-- Embed fields (simplified for scheduler) -->
+              <div id="embedFields">
+                <div class="field-grid" style="margin-top: 16px;">
+                  <label class="full-width">
+                    <span>Embed Title</span>
+                    <input id="embedTitle" type="text" maxlength="256" placeholder="Embed title" />
+                  </label>
+                  <label class="full-width">
+                    <span>Embed Description</span>
+                    <textarea id="embedDescription" rows="3" placeholder="Embed description"></textarea>
+                  </label>
+                  <label>
+                    <span>Color</span>
+                    <input id="embedColor" type="color" value="#5865f2" />
+                  </label>
+                  <label>
+                    <span>Author</span>
+                    <input id="embedAuthor" type="text" placeholder="Author name" />
+                  </label>
+                  <label>
+                    <span>Footer</span>
+                    <input id="embedFooter" type="text" placeholder="Footer text" />
+                  </label>
+                  <label>
+                    <span>Image URL</span>
+                    <input id="embedImage" type="url" placeholder="https://..." />
+                  </label>
+                  <label class="checkbox-label">
+                    <input id="embedTimestamp" type="checkbox" />
+                    <span>Include timestamp</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mentions -->
+            <div class="scheduler-section">
+              <h3 class="scheduler-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Mentions
+              </h3>
+
+              <div class="field-grid">
+                <label>
+                  <span>Mention Type</span>
+                  <select id="mentionType">
+                    <option value="everyone">@everyone</option>
+                    <option value="here">@here</option>
+                    <option value="role">Role</option>
+                    <option value="channel">Channel</option>
+                  </select>
+                </label>
+                <label id="mentionTargetLabel" class="hidden">
+                  <span>Target</span>
+                  <select id="mentionTarget">
+                    <option value="">Select...</option>
+                  </select>
+                </label>
+              </div>
+
+              <button type="button" class="btn-secondary-sm" id="addMentionBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Mention
+              </button>
+
+              <div id="mentionsContainer" class="mentions-list" style="margin-top: 12px;"></div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="scheduler-section">
+              <h3 class="scheduler-section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                Advanced Settings
+              </h3>
+
+              <div class="field-grid">
+                <label>
+                  <span>Max Retries</span>
+                  <input id="maxRetries" type="number" min="0" max="10" value="3" />
+                </label>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="scheduler-form-actions">
+              <input type="hidden" id="scheduleId" />
+              <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+              <button type="submit" class="btn-primary" id="saveScheduleBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span>Save Schedule</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+
+    <script src="./scheduler.js"></script>
+  </body>
+</html>
