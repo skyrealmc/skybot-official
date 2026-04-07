@@ -20,8 +20,18 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - Secure API routes with session auth
 - Basic rate limiting and centralized error handling
 - Analytics page for bot uptime, joined guilds, member totals, and guild breakdown
+- **Clean URL routing** - Modern SaaS-style URLs without .html extensions
 
-### Hybrid Message Builder (NEW)
+### Message Scheduler (NEW)
+- **Schedule messages** for automatic delivery at specified times
+- **One-time scheduling** - Send a message at a specific date/time
+- **Recurring scheduling** - Use cron expressions for repeated messages
+- **Mention support** - Include @everyone, @here, roles, and channels
+- **Schedule management** - View, edit, pause, resume, and delete schedules
+- **Preset cron options** - Quick select for common schedules (daily, hourly, etc.)
+- **Timezone support** - Schedule messages in your local timezone
+
+### Hybrid Message Builder
 - **Three-column layout** with left sidebar, center builder, and right preview
 - **Tab-based interface** with Embed, Components, Components V2, and Settings tabs
 - **Quick templates** for common use cases (Server Online/Offline, Events)
@@ -114,6 +124,16 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - `POST /api/save-template` - Save a message template
 - `GET /api/templates` - List user's templates
 
+### Schedules
+- `GET /api/schedules` - List all schedules
+- `GET /api/schedules/stats` - Get schedule statistics
+- `GET /api/schedules/:id` - Get a specific schedule
+- `POST /api/schedules` - Create a new schedule
+- `PUT /api/schedules/:id` - Update a schedule
+- `DELETE /api/schedules/:id` - Delete a schedule
+- `POST /api/schedules/:id/toggle` - Pause/resume a schedule
+- `GET /scheduler/status` - Get scheduler service status
+
 ## Message Types
 
 ### 1. Embed Only
@@ -163,6 +183,20 @@ Container-based layout without embed:
 - If `Server Members Intent` is disabled or member fetch times out, member mention options are limited but the dashboard still works.
 - The real dashboard is intended to run through the Express server, not directly from the filesystem.
 - A separate isolated demo sandbox exists in `dashboard/demo/` and is excluded from git.
+
+## Recent Changes (Latest)
+
+### Added
+- **Message Scheduler System** - Full scheduling engine with cron support
+- **Clean URL Routing** - URLs like `/`, `/analytics`, `/scheduler` instead of `.html` files
+- **Mention Support in Scheduler** - @everyone, @here, roles, and channels
+- **Schedule Management API** - Full CRUD operations for schedules
+- **Scheduler Dashboard UI** - Dedicated page for managing scheduled messages
+
+### Fixed
+- Form validation issues with hidden required fields
+- Session structure compatibility in schedule controller
+- Module loading issues in scheduler JavaScript
 
 ## Deployment (Railway)
 
