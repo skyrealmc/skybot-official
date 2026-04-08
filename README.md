@@ -7,6 +7,7 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - Node.js + Express
 - discord.js v14
 - MongoDB + Mongoose
+- connect-mongo session store
 - Discord OAuth2
 - Vanilla JavaScript dashboard
 
@@ -22,6 +23,7 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - **Guild filtering** (only guilds where user has Manage Guild or Administrator)
 - **Bot presence detection** per guild with invite link fallback
 - **Server-side permission enforcement** on all protected APIs
+- **Persistent MongoDB session storage** for production-safe auth sessions
 - Basic rate limiting and centralized error handling
 - Analytics page for bot uptime, joined guilds, member totals, and guild breakdown
 - **Clean URL routing** - Modern SaaS-style URLs without .html extensions
@@ -210,6 +212,7 @@ Container-based layout without embed:
 - The bot login is skipped if `DISCORD_TOKEN` is empty.
 - The scheduler startup is skipped if `DISCORD_TOKEN` is empty.
 - The database connection is skipped if `MONGO_URI` is empty.
+- Session storage uses MongoDB (`connect-mongo`) when `MONGO_URI` is set; otherwise it falls back to in-memory sessions for local/dev only.
 - Interaction buttons currently reply with a simple ephemeral confirmation and are ready for custom behavior.
 - Empty button rows are ignored before save/send so unfinished slots do not trigger validation errors.
 - The bot startup uses the current `clientReady` event name for discord.js compatibility.
@@ -234,6 +237,8 @@ Container-based layout without embed:
 - Module loading issues in scheduler JavaScript
 - Scheduler recurring runtime issue with undefined next-run helper
 - Frontend escaping issues in dashboard scripts
+- Discord.js scheduler readiness listener now uses `clientReady` to avoid v15 deprecation warnings
+- Production session warning addressed by replacing default `MemoryStore` with Mongo-backed sessions
 
 ## Deployment (Railway)
 

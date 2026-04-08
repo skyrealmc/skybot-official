@@ -1,6 +1,7 @@
 const express = require("express");
 const helmet = require("helmet");
 const session = require("express-session");
+const MongoStore = require("connect-mongo");
 const path = require("path");
 
 const authRouter = require("./auth");
@@ -20,6 +21,8 @@ function getBotAvatarUrl(user) {
 function createApp({ client }) {
   const app = express();
   const isProduction = process.env.NODE_ENV === "production";
+  const sessionMaxAgeMs = 1000 * 60 * 60 * 8;
+  const hasMongoUri = Boolean(process.env.MONGO_URI);
 
   // Initialize scheduler service
   const scheduler = new SchedulerService(client);
@@ -31,18 +34,32 @@ function createApp({ client }) {
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true }));
+
+  const sessionConfig = {
+    secret: process.env.SESSION_SECRET || "change-me",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+      maxAge: sessionMaxAgeMs
+    }
+  };
+
+  if (hasMongoUri) {
+    sessionConfig.store = MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      collectionName: "sessions",
+      ttl: Math.floor(sessionMaxAgeMs / 1000),
+      autoRemove: "native"
+    });
+  } else {
+    logger.warn("MONGO_URI missing: falling back to in-memory session store.");
+  }
+
   app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "change-me",
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: isProduction,
-        maxAge: 1000 * 60 * 60 * 8
-      }
-    })
+    session(sessionConfig)
   );
 
   // Store bot info in session for easy access

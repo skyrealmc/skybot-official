@@ -37,7 +37,7 @@ class SchedulerService {
     if (!this.client.isReady()) {
       logger.info("Waiting for Discord client to be ready...");
       await new Promise(resolve => {
-        this.client.once("ready", () => {
+        this.client.once("clientReady", () => {
           logger.info("Discord client is ready");
           resolve();
         });
