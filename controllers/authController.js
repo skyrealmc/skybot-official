@@ -165,7 +165,7 @@ function getSession(req, res) {
 
   // Get bot info from session or from the request's client
   const botInfo = req.session.bot || {
-    username: "SkyBot S2",
+    username: process.env.APP_NAME || "Bot",
     avatarUrl: "https://cdn.discordapp.com/embed/avatars/0.png"
   };
 

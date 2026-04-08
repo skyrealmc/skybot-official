@@ -1,5 +1,5 @@
 // ============================================
-// SKY BOT S2 - Hybrid Message Builder
+// Bot Dashboard - Hybrid Message Builder
 // Modern SaaS UI
 // ============================================
 
@@ -18,13 +18,24 @@ const state = {
   messageType: "embed",
   previewMode: "discord",
   botAvatar: "https://cdn.discordapp.com/embed/avatars/0.png",
-  botUsername: "SkyBot S2"
+  botUsername: "Bot",
+  botOnline: null,
+  botStatusInitialized: false
 };
 
 // DOM Elements
 const elements = {
   loginPage: document.querySelector("#loginPage"),
   dashboardPage: document.querySelector("#dashboardPage"),
+  loginBotAvatar: document.querySelector("#loginBotAvatar"),
+  loginBotName: document.querySelector("#loginBotName"),
+  loginBotTagline: document.querySelector("#loginBotTagline"),
+  loginBotAbout: document.querySelector("#loginBotAbout"),
+  loginBotGuilds: document.querySelector("#loginBotGuilds"),
+  loginBotStatus: document.querySelector("#loginBotStatus"),
+  loginPortalHint: document.querySelector("#loginPortalHint"),
+  topbarBotAvatar: document.querySelector("#topbarBotAvatar"),
+  topbarBotTitle: document.querySelector("#topbarBotTitle"),
   guildSelect: document.querySelector("#guildSelect"),
   channelSelect: document.querySelector("#channelSelect"),
   messageContent: document.querySelector("#messageContent"),
@@ -62,7 +73,10 @@ const elements = {
   accessNoticeText: document.querySelector("#accessNoticeText"),
   inviteBotBtn: document.querySelector("#inviteBotBtn"),
   analyticsLink: document.querySelector("#analyticsLink"),
-  schedulerLink: document.querySelector("#schedulerLink")
+  schedulerLink: document.querySelector("#schedulerLink"),
+  botStatusAvatar: document.querySelector("#botStatusAvatar"),
+  botStatusDot: document.querySelector("#botStatusDot"),
+  botStatusBadge: document.querySelector("#botStatusBadge")
 };
 
 // Toast notification container
@@ -183,8 +197,9 @@ function applyAccountLevelRestrictions() {
 
 function applyGuildRestrictions() {
   const selected = state.selectedGuildAccess;
-  const canSend = Boolean(selected?.botPresent && hasCapability("send_messages"));
-  const canManageTemplates = Boolean(selected?.botPresent && hasCapability("manage_templates"));
+  const botOffline = state.botStatusInitialized && state.botOnline === false;
+  const canSend = Boolean(selected?.botPresent && hasCapability("send_messages") && !botOffline);
+  const canManageTemplates = Boolean(selected?.botPresent && hasCapability("manage_templates") && !botOffline);
 
   if (!selected) {
     setAccessNotice({
@@ -199,7 +214,11 @@ function applyGuildRestrictions() {
     });
   } else if (!canSend) {
     setAccessNotice({
-      message: "You do not have permission to send messages in this dashboard for the selected server.",
+      message: botOffline
+        ? "Bot is currently offline. Actions are temporarily disabled."
+        : state.botOnline
+        ? "You do not have permission to send messages in this dashboard for the selected server."
+        : "You do not have permission to send messages in this dashboard for the selected server.",
       type: "error"
     });
   } else {
@@ -212,6 +231,83 @@ function applyGuildRestrictions() {
   if (elements.addButtonBtn) elements.addButtonBtn.disabled = !canSend;
   if (elements.addMentionBtn) elements.addMentionBtn.disabled = !canSend;
   if (elements.addContainerBtn) elements.addContainerBtn.disabled = !canSend;
+}
+
+async function loadPublicBotInfo() {
+  try {
+    const info = await request("/public/bot-info");
+    const avatar = info.avatarUrl || state.botAvatar;
+    const username = info.username || state.botUsername;
+
+    state.botAvatar = avatar;
+    state.botUsername = username;
+
+    if (elements.loginBotAvatar) elements.loginBotAvatar.src = avatar;
+    if (elements.topbarBotAvatar) elements.topbarBotAvatar.src = avatar;
+    if (elements.loginBotName) elements.loginBotName.textContent = username;
+    if (elements.topbarBotTitle) elements.topbarBotTitle.textContent = `${username} Dashboard`;
+    if (elements.loginBotGuilds) elements.loginBotGuilds.textContent = String(info.guildCount || 0);
+    if (elements.loginBotStatus) {
+      elements.loginBotStatus.textContent = info.ready ? "Online" : "Offline";
+      elements.loginBotStatus.style.color = info.ready ? "#22c55e" : "#ef4444";
+    }
+    if (elements.loginBotAbout) {
+      elements.loginBotAbout.textContent = info.about
+        ? info.about
+        : "No bot description set. Add one in Discord Developer Portal > General Information > Description.";
+    }
+    if (elements.loginBotTagline) {
+      elements.loginBotTagline.textContent = info.appTagline || "Manage your bot easily with messaging, templates, and scheduling.";
+    }
+    if (elements.loginPortalHint) {
+      const needsSetup = !info.hasCustomAvatar || !info.about;
+      elements.loginPortalHint.classList.toggle("hidden", !needsSetup);
+      if (needsSetup) {
+        elements.loginPortalHint.textContent =
+          "No full bot profile detected. In Discord Developer Portal, set Bot Avatar and Application Description.";
+      }
+    }
+  } catch {
+    if (elements.loginBotStatus) {
+      elements.loginBotStatus.textContent = "Unknown";
+    }
+    if (elements.loginBotAbout) {
+      elements.loginBotAbout.textContent = "Unable to load bot profile details right now.";
+    }
+  }
+}
+
+async function refreshBotStatus() {
+  try {
+    const status = await request("/api/bot-status");
+    state.botOnline = Boolean(status.online);
+    state.botStatusInitialized = true;
+    if (elements.botStatusDot) {
+      elements.botStatusDot.style.background = status.online ? "#22c55e" : "#ef4444";
+    }
+    if (elements.botStatusBadge) {
+      elements.botStatusBadge.title = status.online ? "Bot online" : "Bot offline";
+    }
+    if (elements.loginBotStatus) {
+      elements.loginBotStatus.textContent = status.online ? "Online" : "Offline";
+      elements.loginBotStatus.style.color = status.online ? "#22c55e" : "#ef4444";
+    }
+  } catch {
+    state.botOnline = false;
+    state.botStatusInitialized = true;
+    if (elements.botStatusDot) {
+      elements.botStatusDot.style.background = "#6b7280";
+    }
+    if (elements.botStatusBadge) {
+      elements.botStatusBadge.title = "Bot status unknown";
+    }
+    if (elements.loginBotStatus) {
+      elements.loginBotStatus.textContent = "Unknown";
+      elements.loginBotStatus.style.color = "#6b7280";
+    }
+  } finally {
+    applyGuildRestrictions();
+  }
 }
 
 function debounce(fn, delay) {
@@ -882,16 +978,16 @@ const QUICK_TEMPLATES = {
     messageContent: "",
     embedData: {
       title: "🟢 Server is Online!",
-      description: "The SKY REALM server is now online. Join us!",
+      description: "The server is now online. Join now!",
       color: "#00ff00",
-      author: "SKY REALM",
-      footer: "SKY BOT S2",
+      author: "Server Updates",
+      footer: "Server Updates",
       image: "",
       thumbnail: "",
       timestamp: true
     },
     buttons: [
-      { type: "link", style: "Link", label: "Join Server", url: "https://play.skyrealm.net", emoji: "🎮", customId: "" }
+      { type: "link", style: "Link", label: "Open Server", url: "https://example.com", emoji: "🎮", customId: "" }
     ],
     componentsV2: [],
     mentions: [],
@@ -905,8 +1001,8 @@ const QUICK_TEMPLATES = {
       title: "🔴 Server Maintenance",
       description: "The server is currently offline for maintenance. We'll be back soon!",
       color: "#ff0000",
-      author: "SKY REALM",
-      footer: "SKY BOT S2",
+      author: "Server Updates",
+      footer: "Server Updates",
       image: "",
       thumbnail: "",
       timestamp: true
@@ -924,8 +1020,8 @@ const QUICK_TEMPLATES = {
       title: "🔄 Server Restarting",
       description: "The server is restarting. Please wait a moment...",
       color: "#ffa500",
-      author: "SKY REALM",
-      footer: "SKY BOT S2",
+      author: "Server Updates",
+      footer: "Server Updates",
       image: "",
       thumbnail: "",
       timestamp: true
@@ -941,9 +1037,9 @@ const QUICK_TEMPLATES = {
     messageContent: "",
     embedData: {
       title: "📢 Upcoming Event!",
-      description: "Join us for a special event on the SKY REALM server!\n\n🗓️ Date: TBD\n🕐 Time: TBD\n📍 Location: Main Hub\n\nPrizes and fun await!",
+      description: "Join us for a special community event!\n\n🗓️ Date: TBD\n🕐 Time: TBD\n📍 Location: Announced in server\n\nPrizes and fun await!",
       color: "#5865f2",
-      author: "SKY REALM Events",
+      author: "Community Events",
       footer: "Don't miss out!",
       image: "",
       thumbnail: "",
@@ -951,7 +1047,7 @@ const QUICK_TEMPLATES = {
     },
     buttons: [
       { type: "interaction", style: "Success", label: "I'm Interested", url: "", emoji: "🎉", customId: "event_interested" },
-      { type: "link", style: "Primary", label: "Discord", url: "https://discord.gg/skyrealm", emoji: "💬", customId: "" }
+      { type: "link", style: "Primary", label: "Community", url: "https://discord.gg/", emoji: "💬", customId: "" }
     ],
     componentsV2: [],
     mentions: [{ type: "everyone", id: "" }],
@@ -1149,6 +1245,8 @@ async function deleteTemplate(templateId) {
 const debouncedPreview = debounce(renderPreview, 150);
 
 async function initialize() {
+  await loadPublicBotInfo();
+
   // Initialize UI components
   initTabs();
   initPreviewToggle();
@@ -1291,6 +1389,9 @@ async function initialize() {
   // Guild select change
   if (elements.guildSelect) {
     elements.guildSelect.addEventListener("change", () => {
+      if (elements.guildSelect.value) {
+        localStorage.setItem("skybot_selected_guild", elements.guildSelect.value);
+      }
       loadChannels().then(() => loadGuildResources()).catch(console.error);
     });
   }
@@ -1334,6 +1435,18 @@ async function initialize() {
     if (session.bot) {
       state.botAvatar = session.bot.avatarUrl || state.botAvatar;
       state.botUsername = session.bot.username || state.botUsername;
+      if (elements.botStatusAvatar) {
+        elements.botStatusAvatar.src = state.botAvatar;
+      }
+      if (elements.topbarBotAvatar) {
+        elements.topbarBotAvatar.src = state.botAvatar;
+      }
+      if (elements.topbarBotTitle) {
+        elements.topbarBotTitle.textContent = `${state.botUsername} Dashboard`;
+      }
+      if (elements.botStatusBadge) {
+        elements.botStatusBadge.title = `${state.botUsername} status`;
+      }
     }
 
     // Update topbar user info
@@ -1352,7 +1465,9 @@ async function initialize() {
 
     // Load data
     renderGuilds();
+    const preferredGuildId = localStorage.getItem("skybot_selected_guild");
     const defaultGuild =
+      state.guilds.find((guild) => guild.id === preferredGuildId) ||
       state.guilds.find((guild) => guild.botPresent && guild.capabilities?.send_messages) ||
       state.guilds.find((guild) => guild.botPresent) ||
       state.guilds[0];
@@ -1371,6 +1486,8 @@ async function initialize() {
     }
     renderMentions();
     renderPreview();
+    await refreshBotStatus();
+    setInterval(refreshBotStatus, 30000);
 
   } catch (error) {
     // User is not authenticated - show login page

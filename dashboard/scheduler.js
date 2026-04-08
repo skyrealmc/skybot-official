@@ -1,5 +1,5 @@
 // ============================================
-// SKY BOT S2 - Message Scheduler
+// Bot Dashboard - Message Scheduler
 // ============================================
 
 // State
@@ -53,6 +53,8 @@ const elements = {
   mentionTargetLabel: document.querySelector("#mentionTargetLabel"),
   addMentionBtn: document.querySelector("#addMentionBtn"),
   mentionsContainer: document.querySelector("#mentionsContainer"),
+  topbarBotAvatar: document.querySelector("#topbarBotAvatar"),
+  topbarBotTitle: document.querySelector("#topbarBotTitle"),
   schedulerAccessNotice: document.querySelector("#schedulerAccessNotice"),
   schedulerAccessText: document.querySelector("#schedulerAccessText"),
   schedulerInviteBtn: document.querySelector("#schedulerInviteBtn")
@@ -75,6 +77,21 @@ async function request(path, options = {}) {
   }
 
   return response.json();
+}
+
+async function loadPublicBotInfo() {
+  try {
+    const info = await request("/public/bot-info");
+    if (elements.topbarBotAvatar && info.avatarUrl) {
+      elements.topbarBotAvatar.src = info.avatarUrl;
+    }
+    if (elements.topbarBotTitle) {
+      const name = info.username || "Bot";
+      elements.topbarBotTitle.textContent = `${name} Dashboard`;
+    }
+  } catch {
+    // Ignore topbar branding failures
+  }
 }
 
 function escapeHtml(value) {
@@ -662,6 +679,8 @@ async function handleScheduleAction(scheduleId, action) {
 
 // Initialize
 async function initialize() {
+  await loadPublicBotInfo();
+
   // Set minimum datetime
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -680,6 +699,9 @@ async function initialize() {
   elements.scheduleForm.addEventListener("submit", saveSchedule);
 
   elements.scheduleGuild.addEventListener("change", () => {
+    if (elements.scheduleGuild.value) {
+      localStorage.setItem("skybot_scheduler_guild", elements.scheduleGuild.value);
+    }
     loadChannels();
     // Reset guild resources when guild changes
     state.guildResources = null;
@@ -736,6 +758,7 @@ async function initialize() {
     ]);
 
     const defaultGuild =
+      state.guilds.find((guild) => guild.id === localStorage.getItem("skybot_scheduler_guild")) ||
       state.guilds.find((guild) => guild.botPresent && (guild.capabilities?.manage_settings || guild.capabilities?.full_access)) ||
       state.guilds[0];
     if (defaultGuild) {

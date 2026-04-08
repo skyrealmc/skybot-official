@@ -17,6 +17,13 @@ function isValidCronExpression(expression) {
   }
 }
 
+function sanitizeText(value, maxLength = 4000) {
+  return String(value || "")
+    .replace(/\u0000/g, "")
+    .slice(0, maxLength)
+    .trim();
+}
+
 // Get all schedules for user's guilds
 async function getSchedules(req, res, next) {
   try {
@@ -74,6 +81,11 @@ async function getSchedule(req, res, next) {
 // Create new schedule
 async function createSchedule(req, res, next) {
   try {
+    const client = req.app.get("discordClient");
+    if (!client?.isReady || !client.isReady()) {
+      return res.status(503).json({ error: "Bot is currently offline. Scheduler creation is temporarily unavailable." });
+    }
+
     const {
       guildId,
       channelId,
@@ -100,6 +112,17 @@ async function createSchedule(req, res, next) {
 
     if (!["embed", "hybrid", "components_v2"].includes(messageType)) {
       return res.status(400).json({ error: "Invalid message type." });
+    }
+
+    if (client?.isReady && client.isReady()) {
+      try {
+        const channel = await client.channels.fetch(channelId);
+        if (!channel || channel.guildId !== guildId) {
+          return res.status(400).json({ error: "Channel does not belong to the selected guild." });
+        }
+      } catch {
+        return res.status(400).json({ error: "Invalid or inaccessible channel." });
+      }
     }
 
     // Validate schedule type
@@ -133,7 +156,10 @@ async function createSchedule(req, res, next) {
       channelId,
       name,
       messageType,
-      payload,
+      payload: {
+        ...payload,
+        messageContent: sanitizeText(payload.messageContent, 2000)
+      },
       scheduleType,
       cronExpression: scheduleType === "recurring" ? cronExpression : null,
       scheduledAt: scheduledDate,
@@ -257,7 +283,9 @@ async function getScheduleStats(req, res, next) {
 
     const result = {
       total: 0,
+      pending: 0,
       active: 0,
+      running: 0,
       paused: 0,
       completed: 0,
       failed: 0

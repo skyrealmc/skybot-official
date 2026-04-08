@@ -91,10 +91,10 @@ a {
 
 .login-split {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   width: 100%;
-  max-width: 1200px;
-  min-height: 600px;
+  max-width: 560px;
+  min-height: 0;
   margin: 24px;
   border-radius: var(--radius-xl);
   overflow: hidden;
@@ -192,12 +192,25 @@ a {
 
 .login-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 460px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 40px 32px;
   box-shadow: var(--shadow-md);
+}
+
+.login-card .stat-label {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.login-card .stat-value {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-top: 2px;
 }
 
 .login-card-header {

@@ -295,11 +295,15 @@ function buildOutgoingContent({ messageContent, mentions }) {
     .join("\n");
 }
 
-async function sendEmbedMessage(client, { channelId, content, embed, components, reactions }) {
+async function sendEmbedMessage(client, { guildId, channelId, content, embed, components, reactions }) {
   const channel = await client.channels.fetch(channelId);
 
   if (!channel || !("send" in channel)) {
     throw new Error("Selected channel is not sendable.");
+  }
+
+  if (guildId && channel.guildId && channel.guildId !== guildId) {
+    throw new Error("Channel does not belong to the selected guild.");
   }
 
   const botPermissions = channel.permissionsFor(client.user.id);
@@ -326,7 +330,7 @@ async function sendEmbedMessage(client, { channelId, content, embed, components,
   return message;
 }
 
-async function fetchBotAnalytics(client, sessionGuilds = []) {
+async function fetchBotAnalytics(client, sessionGuilds = [], metricsMap = new Map()) {
   const accessibleGuildIds = new Set(sessionGuilds.map((guild) => guild.id));
   const guilds = client.guilds.cache
     .filter((guild) => accessibleGuildIds.size === 0 || accessibleGuildIds.has(guild.id))
@@ -343,7 +347,12 @@ async function fetchBotAnalytics(client, sessionGuilds = []) {
         memberCount: guild.memberCount || 0,
         channelCount: guild.channels.cache.size,
         roleCount: guild.roles.cache.size,
-        ownerId: guild.ownerId || ""
+        ownerId: guild.ownerId || "",
+        metrics: {
+          messagesSent: metricsMap.get(guild.id)?.messagesSent || 0,
+          schedulerExecutions: metricsMap.get(guild.id)?.schedulerExecutions || 0,
+          schedulerFailures: metricsMap.get(guild.id)?.schedulerFailures || 0
+        }
       };
     })
   );
@@ -359,7 +368,10 @@ async function fetchBotAnalytics(client, sessionGuilds = []) {
     },
     totals: {
       accessibleGuilds: guildSummaries.length,
-      memberCount: guildSummaries.reduce((sum, guild) => sum + guild.memberCount, 0)
+      memberCount: guildSummaries.reduce((sum, guild) => sum + guild.memberCount, 0),
+      messagesSent: guildSummaries.reduce((sum, guild) => sum + (guild.metrics?.messagesSent || 0), 0),
+      schedulerExecutions: guildSummaries.reduce((sum, guild) => sum + (guild.metrics?.schedulerExecutions || 0), 0),
+      schedulerFailures: guildSummaries.reduce((sum, guild) => sum + (guild.metrics?.schedulerFailures || 0), 0)
     },
     guilds: guildSummaries.sort((a, b) => b.memberCount - a.memberCount)
   };
@@ -379,11 +391,15 @@ module.exports = {
   sendHybridMessage
 };
 
-async function sendHybridMessage(client, { channelId, content, embed, components, componentsV2, messageType, reactions }) {
+async function sendHybridMessage(client, { guildId, channelId, content, embed, components, componentsV2, messageType, reactions }) {
   const channel = await client.channels.fetch(channelId);
 
   if (!channel || !("send" in channel)) {
     throw new Error("Selected channel is not sendable.");
+  }
+
+  if (guildId && channel.guildId && channel.guildId !== guildId) {
+    throw new Error("Channel does not belong to the selected guild.");
   }
 
   const botPermissions = channel.permissionsFor(client.user.id);

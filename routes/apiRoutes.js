@@ -11,6 +11,7 @@ const {
   getChannels,
   getGuildResources,
   getAnalytics,
+  getBotStatus,
   sendMessage,
   validateMessagePayload
 } = require("../controllers/embedController");
@@ -35,22 +36,35 @@ const {
 
 function createApiRouter({ client }) {
   const router = express.Router();
-  const limiter = rateLimit({
+  const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
     limit: 60,
     standardHeaders: true,
     legacyHeaders: false
   });
+  const sendLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false
+  });
+  const scheduleCreateLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false
+  });
 
-  router.use(limiter);
+  router.use(globalLimiter);
   router.use(requireAuth);
 
   router.get("/guilds", getGuilds({ client }));
+  router.get("/bot-status", getBotStatus({ client }));
   router.get("/analytics", requireAccountCapability("view_analytics"), getAnalytics({ client }));
   router.get("/channels/:guildId", requireGuildCapability("send_messages", { source: "params" }), getChannels({ client }));
   router.get("/resources/:guildId", requireGuildCapability("send_messages", { source: "params" }), getGuildResources({ client }));
   router.get("/guild-resources/:guildId", requireGuildCapability("send_messages", { source: "params" }), getGuildResources({ client }));
-  router.post("/send-message", requireGuildCapability("send_messages", { source: "body" }), sendMessage({ client }));
+  router.post("/send-message", sendLimiter, requireGuildCapability("send_messages", { source: "body" }), sendMessage({ client }));
   router.post("/validate-message", requireGuildCapability("send_messages", { source: "body" }), validateMessagePayload);
 
   // Template routes
@@ -66,7 +80,7 @@ function createApiRouter({ client }) {
   router.get("/schedules", requireAccountCapability("manage_settings"), getSchedules);
   router.get("/schedules/stats", requireAccountCapability("manage_settings"), getScheduleStats);
   router.get("/schedules/:id", requireAccountCapability("manage_settings"), getSchedule);
-  router.post("/schedules", requireGuildCapability("manage_settings", { source: "body" }), createSchedule);
+  router.post("/schedules", scheduleCreateLimiter, requireGuildCapability("manage_settings", { source: "body" }), createSchedule);
   router.put("/schedules/:id", requireAccountCapability("manage_settings"), updateSchedule);
   router.delete("/schedules/:id", requireAccountCapability("manage_settings"), deleteSchedule);
   router.post("/schedules/:id/toggle", requireAccountCapability("manage_settings"), toggleSchedule);

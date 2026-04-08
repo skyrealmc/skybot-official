@@ -11,7 +11,18 @@ const {
   getGuildAccess,
   hasCapability
 } = require("../services/permissionService");
+const {
+  incrementMessageSent,
+  getGuildMetricsMap
+} = require("../services/metricsService");
 const { validateMessage } = require("../middlewares/validators");
+
+function sanitizeText(value, maxLength = 4000) {
+  return String(value || "")
+    .replace(/\u0000/g, "")
+    .slice(0, maxLength)
+    .trim();
+}
 
 function getGuilds({ client }) {
   return async (req, res) => {
@@ -87,7 +98,8 @@ function getAnalytics({ client }) {
           name: guild.name,
           permissions: guild.permissions
         }));
-      const analytics = await fetchBotAnalytics(client, accessibleGuilds);
+      const metricsMap = await getGuildMetricsMap(accessibleGuilds.map((guild) => guild.id));
+      const analytics = await fetchBotAnalytics(client, accessibleGuilds, metricsMap);
       return res.json(analytics);
     } catch (error) {
       return next(error);
@@ -98,6 +110,10 @@ function getAnalytics({ client }) {
 function sendMessage({ client }) {
   return async (req, res, next) => {
     try {
+      if (!client?.isReady || !client.isReady()) {
+        return res.status(503).json({ error: "Bot is currently offline. Please try again shortly." });
+      }
+
       validateMessage(req.body);
 
       const access = getGuildAccess(req.session, req.body.guildId);
@@ -108,7 +124,7 @@ function sendMessage({ client }) {
 
       const messageType = req.body.messageType || "embed";
       const content = buildOutgoingContent({
-        messageContent: req.body.messageContent,
+        messageContent: sanitizeText(req.body.messageContent, 2000),
         mentions: req.body.mentions || []
       });
 
@@ -126,6 +142,7 @@ function sendMessage({ client }) {
 
       const message = await sendHybridMessage(client, {
         channelId: req.body.channelId,
+        guildId: req.body.guildId,
         content,
         embed,
         components,
@@ -134,6 +151,8 @@ function sendMessage({ client }) {
         reactions: req.body.reactions || []
       });
 
+      await incrementMessageSent(req.body.guildId);
+
       return res.json({
         success: true,
         messageId: message.id
@@ -141,6 +160,18 @@ function sendMessage({ client }) {
     } catch (error) {
       return next(error);
     }
+  };
+}
+
+function getBotStatus({ client }) {
+  return async (_req, res) => {
+    const ready = Boolean(client?.isReady && client.isReady());
+    res.json({
+      online: ready,
+      status: ready ? "online" : "offline",
+      uptimeMs: client?.uptime || 0,
+      guildCount: client?.guilds?.cache?.size || 0
+    });
   };
 }
 
@@ -161,6 +192,7 @@ module.exports = {
   getChannels,
   getGuildResources,
   getAnalytics,
+  getBotStatus,
   sendMessage,
   validateMessagePayload
 };

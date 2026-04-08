@@ -1,5 +1,5 @@
 // ============================================
-// SKY BOT S2 - Analytics Page
+// Bot Dashboard - Analytics Page
 // Modern SaaS UI
 // ============================================
 
@@ -12,10 +12,15 @@ const elements = {
   totalGuilds: document.querySelector("#totalGuilds"),
   totalMembers: document.querySelector("#totalMembers"),
   uptime: document.querySelector("#uptime"),
+  messagesSent: document.querySelector("#messagesSent"),
+  schedulerExecutions: document.querySelector("#schedulerExecutions"),
+  schedulerFailures: document.querySelector("#schedulerFailures"),
   botUsername: document.querySelector("#botUsername"),
   botId: document.querySelector("#botId"),
   accessibleGuilds: document.querySelector("#accessibleGuilds"),
-  guildTableBody: document.querySelector("#guildTableBody")
+  guildTableBody: document.querySelector("#guildTableBody"),
+  topbarBotAvatar: document.querySelector("#topbarBotAvatar"),
+  topbarBotTitle: document.querySelector("#topbarBotTitle")
 };
 
 async function request(path, options = {}) {
@@ -34,6 +39,21 @@ async function request(path, options = {}) {
   }
 
   return response.json();
+}
+
+async function loadPublicBotInfo() {
+  try {
+    const info = await request("/public/bot-info");
+    if (elements.topbarBotAvatar && info.avatarUrl) {
+      elements.topbarBotAvatar.src = info.avatarUrl;
+    }
+    if (elements.topbarBotTitle) {
+      const name = info.username || "Bot";
+      elements.topbarBotTitle.textContent = `${name} Dashboard`;
+    }
+  } catch {
+    // Ignore topbar branding failures
+  }
 }
 
 function escapeHtml(value) {
@@ -77,6 +97,15 @@ function renderAnalytics(analytics) {
   elements.totalGuilds.textContent = analytics.bot.guildCount;
   elements.totalMembers.textContent = analytics.totals.memberCount.toLocaleString();
   elements.uptime.textContent = formatUptime(analytics.bot.uptimeMs);
+  if (elements.messagesSent) {
+    elements.messagesSent.textContent = (analytics.totals.messagesSent || 0).toLocaleString();
+  }
+  if (elements.schedulerExecutions) {
+    elements.schedulerExecutions.textContent = (analytics.totals.schedulerExecutions || 0).toLocaleString();
+  }
+  if (elements.schedulerFailures) {
+    elements.schedulerFailures.textContent = (analytics.totals.schedulerFailures || 0).toLocaleString();
+  }
 
   // Bot Info
   elements.botUsername.textContent = analytics.bot.username;
@@ -94,6 +123,9 @@ function renderAnalytics(analytics) {
           <td>${guild.memberCount.toLocaleString()}</td>
           <td>${guild.channelCount}</td>
           <td>${guild.roleCount}</td>
+          <td>${(guild.metrics?.messagesSent || 0).toLocaleString()}</td>
+          <td>${(guild.metrics?.schedulerExecutions || 0).toLocaleString()}</td>
+          <td>${(guild.metrics?.schedulerFailures || 0).toLocaleString()}</td>
           <td><span class="guild-id">${escapeHtml(guild.ownerId)}</span></td>
         </tr>
       `
@@ -103,6 +135,7 @@ function renderAnalytics(analytics) {
 
 async function initialize() {
   try {
+    await loadPublicBotInfo();
     // Check authentication
     const session = await request("/auth/session");
     if (!session.authenticated) {

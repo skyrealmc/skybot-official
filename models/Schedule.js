@@ -52,7 +52,7 @@ const scheduleSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "paused", "completed", "failed"],
+      enum: ["pending", "active", "running", "paused", "completed", "failed"],
       default: "active",
       index: true
     },
@@ -107,12 +107,18 @@ scheduleSchema.methods.markCompleted = function () {
   return this.save();
 };
 
+scheduleSchema.methods.markRunning = function () {
+  this.status = "running";
+  return this.save();
+};
+
 // Instance method to update after successful run
 scheduleSchema.methods.markRan = function () {
   this.lastRun = new Date();
   this.retryCount = 0;
 
   if (this.scheduleType === "recurring" && this.cronExpression) {
+    this.status = "active";
     this.nextRun = getRecurringNextRun();
   } else {
     this.status = "completed";
@@ -126,6 +132,10 @@ scheduleSchema.methods.incrementRetry = function () {
   this.retryCount += 1;
   if (this.retryCount >= this.maxRetries) {
     this.status = "failed";
+  } else if (this.scheduleType === "one_time") {
+    const retryDelayMinutes = Math.min(5 * (2 ** (this.retryCount - 1)), 60);
+    this.status = "pending";
+    this.nextRun = new Date(Date.now() + retryDelayMinutes * 60 * 1000);
   }
   return this.save();
 };
@@ -134,14 +144,16 @@ scheduleSchema.methods.incrementRetry = function () {
 scheduleSchema.statics.getDueSchedules = function () {
   const now = new Date();
   return this.find({
-    status: "active",
+    status: { $in: ["active", "pending"] },
     nextRun: { $lte: now }
   }).lean();
 };
 
 // Static method to get upcoming schedules
 scheduleSchema.statics.getUpcomingSchedules = function (guildId, limit = 10) {
-  const query = guildId ? { guildId, status: "active" } : { status: "active" };
+  const query = guildId
+    ? { guildId, status: { $in: ["active", "pending"] } }
+    : { status: { $in: ["active", "pending"] } };
   return this.find(query)
     .sort({ nextRun: 1 })
     .limit(limit)

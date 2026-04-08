@@ -1,6 +1,6 @@
 # SKY REALM | SKY BOT S2 Dashboard
 
-Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft community. Built for SKY BOT S2 with creator credit to chriz3656.
+Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hostable with your own bot credentials while preserving the SKY REALM production setup.
 
 ## Stack
 
@@ -24,6 +24,8 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - **Bot presence detection** per guild with invite link fallback
 - **Server-side permission enforcement** on all protected APIs
 - **Persistent MongoDB session storage** for production-safe auth sessions
+- **Live bot status endpoint + UI indicator** for action gating
+- **Per-guild operational metrics** (messages, scheduler runs, failures)
 - Basic rate limiting and centralized error handling
 - Analytics page for bot uptime, joined guilds, member totals, and guild breakdown
 - **Clean URL routing** - Modern SaaS-style URLs without .html extensions
@@ -90,12 +92,13 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 
 1. Copy `.env.example` to `.env`.
 2. Fill in `DISCORD_TOKEN`, `CLIENT_ID`, `CLIENT_SECRET`, `REDIRECT_URI`, `MONGO_URI`, and `SESSION_SECRET`.
-3. In the Discord Developer Portal, add `http://localhost:3000/auth/callback` under `OAuth2` redirect URLs for local development.
-4. Invite the bot to your Discord server with `View Channels`, `Send Messages`, and `Embed Links`.
-5. Start MongoDB or configure MongoDB Atlas network access.
-6. Install dependencies with `npm install`.
-7. Run the app with `npm run dev` or `npm start`.
-8. Open `http://localhost:3000`.
+3. (Optional) Set `APP_NAME` and `APP_TAGLINE` to customize public branding.
+4. In the Discord Developer Portal, add `http://localhost:3000/auth/callback` under `OAuth2` redirect URLs for local development.
+5. Invite the bot to your Discord server with `View Channels`, `Send Messages`, and `Embed Links`.
+6. Start MongoDB or configure MongoDB Atlas network access.
+7. Install dependencies with `npm install`.
+8. Run the app with `npm run dev` or `npm start`.
+9. Open `http://localhost:3000`.
 
 ## Required Discord Setup
 
@@ -143,6 +146,7 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 
 ### Messages
 - `GET /api/guilds` - List accessible guilds
+- `GET /api/bot-status` - Get live bot online/offline status
 - `GET /api/channels/:guildId` - List channels in a guild
 - `GET /api/resources/:guildId` - Get guild resources (channels, roles, members)
 - `GET /api/analytics` - Get bot analytics (`view_analytics` required)
@@ -213,6 +217,8 @@ Container-based layout without embed:
 - The scheduler startup is skipped if `DISCORD_TOKEN` is empty.
 - The database connection is skipped if `MONGO_URI` is empty.
 - Session storage uses MongoDB (`connect-mongo`) when `MONGO_URI` is set; otherwise it falls back to in-memory sessions for local/dev only.
+- Message sending and scheduler creation are blocked while the bot is offline.
+- Guild/channel checks are validated server-side to prevent cross-guild spoofing.
 - Interaction buttons currently reply with a simple ephemeral confirmation and are ready for custom behavior.
 - Empty button rows are ignored before save/send so unfinished slots do not trigger validation errors.
 - The bot startup uses the current `clientReady` event name for discord.js compatibility.
@@ -230,6 +236,10 @@ Container-based layout without embed:
 - **Scheduler Dashboard UI** - Dedicated page for managing scheduled messages
 - **SaaS-grade access control** - role/capability checks for UI and API
 - **Guild bot-presence validation** - unavailable guild handling + invite flow
+- **Operational metrics layer** - tracks sent messages and scheduler outcomes per guild
+- **Bot status API** - synchronized status badge and action gating in UI
+- **Dynamic bot branding in UI** - topbar/login now load live bot avatar and bot name
+- **Public bot info endpoint** - login and page headers can render bot profile details
 
 ### Fixed
 - Form validation issues with hidden required fields
@@ -239,6 +249,8 @@ Container-based layout without embed:
 - Frontend escaping issues in dashboard scripts
 - Discord.js scheduler readiness listener now uses `clientReady` to avoid v15 deprecation warnings
 - Production session warning addressed by replacing default `MemoryStore` with Mongo-backed sessions
+- Added duplicate-schedule execution guard and retry backoff strategy for failed one-time jobs
+- Removed hardcoded server-specific quick-template branding/links for safer public reuse
 
 ## Deployment (Railway)
 
@@ -250,6 +262,8 @@ Container-based layout without embed:
    - `REDIRECT_URI` (your production URL)
    - `MONGO_URI` (MongoDB Atlas connection string)
    - `SESSION_SECRET` (long random string)
+   - `APP_NAME` (optional public dashboard name)
+   - `APP_TAGLINE` (optional login-page subtitle)
 3. Deploy!
 
 ## License

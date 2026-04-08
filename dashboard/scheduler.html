@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SKY BOT S2 | Message Scheduler</title>
+    <title>Message Scheduler</title>
     <meta name="description" content="Schedule messages for your Discord server" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.svg" />
@@ -346,18 +346,9 @@
       <header class="topbar">
         <div class="topbar-left">
           <div class="topbar-logo">
-            <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" rx="12" fill="url(#topbarGradient)" />
-              <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-              <defs>
-                <linearGradient id="topbarGradient" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#5865F2" />
-                  <stop offset="1" stop-color="#7C3AED" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <img id="topbarBotAvatar" src="./favicon.svg" alt="Bot avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border);" />
           </div>
-          <span class="topbar-title">SKY BOT S2</span>
+          <span class="topbar-title" id="topbarBotTitle">Loading Dashboard</span>
           <span style="color: var(--text-muted); margin: 0 8px;">/</span>
           <span style="color: var(--text-secondary); font-size: 0.9rem;">Message Scheduler</span>
         </div>

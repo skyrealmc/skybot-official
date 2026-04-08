@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SKY BOT S2 | Control Panel</title>
-    <meta name="description" content="Official SKY REALM Discord bot control panel" />
+    <title>Dashboard</title>
+    <meta name="description" content="Discord bot dashboard with messaging, templates, and scheduling" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.svg" />
     <link rel="manifest" href="./site.webmanifest" />
@@ -17,55 +17,26 @@
     <!-- Login Page (shown when not authenticated) -->
     <div class="login-page" id="loginPage">
       <div class="login-split">
-        <!-- Left Panel - Brand -->
-        <div class="login-brand-panel">
-          <div class="brand-content">
-            <div class="brand-logo">
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="48" height="48" rx="12" fill="url(#brandGradient)" />
-                <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                <defs>
-                  <linearGradient id="brandGradient" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#5865F2" />
-                    <stop offset="1" stop-color="#7C3AED" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <h1 class="brand-title">SKY REALM</h1>
-            <p class="brand-tagline">Control Panel</p>
-            <div class="brand-features">
-              <div class="feature-item">
-                <span class="feature-icon">✦</span>
-                <span>Hybrid Message Builder</span>
-              </div>
-              <div class="feature-item">
-                <span class="feature-icon">⚡</span>
-                <span>Real-time Preview</span>
-              </div>
-              <div class="feature-item">
-                <span class="feature-icon">🎨</span>
-                <span>Components V2 Support</span>
-              </div>
-            </div>
-          </div>
-          <div class="brand-footer">
-            <p>Manage your Discord bot like a pro</p>
-          </div>
-        </div>
-
-        <!-- Right Panel - Login -->
         <div class="login-form-panel">
           <div class="login-card">
             <div class="login-card-header">
               <div class="login-logo">
-                <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="48" height="48" rx="12" fill="#5865F2" />
-                  <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+                <img id="loginBotAvatar" src="./favicon.svg" alt="Bot avatar" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:1px solid var(--border);" />
               </div>
-              <h2 class="login-heading">Welcome back</h2>
-              <p class="login-subheading">Sign in to access your control panel</p>
+              <h2 class="login-heading" id="loginBotName">Bot Control Panel</h2>
+              <p class="login-subheading" id="loginBotTagline">Manage your bot easily with a clean dashboard</p>
+              <p class="login-note" id="loginBotAbout" style="margin-top:10px;">Bot details will appear here after connection.</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:18px;">
+              <div class="stat-item" style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+                <div class="stat-label">Guilds</div>
+                <div class="stat-value" id="loginBotGuilds">-</div>
+              </div>
+              <div class="stat-item" style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+                <div class="stat-label">Status</div>
+                <div class="stat-value" id="loginBotStatus">Checking</div>
+              </div>
             </div>
 
             <a href="/auth/login" class="discord-login-btn" id="loginBtn">
@@ -75,7 +46,8 @@
               <span>Continue with Discord</span>
             </a>
 
-            <p class="login-note">Secure login via Discord OAuth2</p>
+            <p class="login-note">Secure sign-in via Discord OAuth2</p>
+            <p class="login-note hidden" id="loginPortalHint" style="margin-top:8px;">No custom bot profile detected. Set avatar/about in Discord Developer Portal to improve branding.</p>
           </div>
         </div>
       </div>
@@ -87,18 +59,9 @@
       <header class="topbar">
         <div class="topbar-left">
           <div class="topbar-logo">
-            <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" rx="12" fill="url(#topbarGradient)" />
-              <path d="M14 24L22 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-              <defs>
-                <linearGradient id="topbarGradient" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#5865F2" />
-                  <stop offset="1" stop-color="#7C3AED" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <img id="topbarBotAvatar" src="./favicon.svg" alt="Bot avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border);" />
           </div>
-          <span class="topbar-title">SKY BOT S2</span>
+          <span class="topbar-title" id="topbarBotTitle">Loading Dashboard</span>
         </div>
 
         <div class="topbar-center">
@@ -108,6 +71,12 @@
         </div>
 
         <div class="topbar-right">
+          <span id="botStatusBadge" class="topbar-icon-btn" style="cursor: default; padding: 4px 8px;">
+            <span style="position: relative; display: inline-flex; align-items: center;">
+              <img id="botStatusAvatar" src="./favicon.svg" alt="Bot avatar" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" />
+              <span id="botStatusDot" style="position:absolute;right:-3px;bottom:-3px;display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;border:1px solid var(--bg-secondary);"></span>
+            </span>
+          </span>
           <a href="/scheduler" class="topbar-icon-btn" id="schedulerLink" title="Scheduler">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>

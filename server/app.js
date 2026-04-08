@@ -74,6 +74,7 @@ function createApp({ client }) {
     }
     // Store scheduler reference for API access
     req.app.set("scheduler", scheduler);
+    req.app.set("discordClient", client);
     next();
   });
 
@@ -115,6 +116,38 @@ function createApp({ client }) {
 
   app.get("/health", (_req, res) => {
     res.json({ ok: true });
+  });
+
+  app.get("/public/bot-info", async (_req, res) => {
+    const ready = Boolean(client?.isReady && client.isReady());
+    const botUser = client?.user;
+    const appName = process.env.APP_NAME || "Bot Dashboard";
+    const appTagline = process.env.APP_TAGLINE || "Manage your bot easily with messaging, templates, and scheduling.";
+    let about = "";
+
+    if (ready && client?.application?.fetch) {
+      try {
+        const appInfo = await client.application.fetch();
+        about = appInfo?.description || "";
+      } catch (error) {
+        logger.warn(`Failed to fetch Discord application info: ${error.message}`);
+      }
+    }
+
+    const hasCustomAvatar = Boolean(botUser?.avatar);
+    const avatarUrl = botUser?.displayAvatarURL({ size: 256 }) || "https://cdn.discordapp.com/embed/avatars/0.png";
+
+    res.json({
+      ready,
+      status: ready ? "online" : "offline",
+      username: botUser?.username || appName,
+      avatarUrl,
+      hasCustomAvatar,
+      about,
+      guildCount: client?.guilds?.cache?.size || 0,
+      appName,
+      appTagline
+    });
   });
 
   // Scheduler status endpoint

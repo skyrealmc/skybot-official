@@ -9,11 +9,16 @@ const {
   buildOutgoingContent,
   sendHybridMessage
 } = require("./discordService");
+const {
+  incrementSchedulerExecution,
+  incrementSchedulerFailure
+} = require("./metricsService");
 
 class SchedulerService {
   constructor(client) {
     this.client = client;
     this.cronJobs = new Map();
+    this.executingSchedules = new Set();
     this.isRunning = false;
     this.checkInterval = null;
   }
@@ -146,6 +151,12 @@ class SchedulerService {
 
   // Execute a schedule (send the message)
   async executeSchedule(scheduleId) {
+    if (this.executingSchedules.has(scheduleId)) {
+      logger.warn(`Schedule ${scheduleId} is already running. Duplicate execution skipped.`);
+      return;
+    }
+
+    this.executingSchedules.add(scheduleId);
     try {
       const schedule = await Schedule.findById(scheduleId);
       if (!schedule) {
@@ -154,12 +165,13 @@ class SchedulerService {
         return;
       }
 
-      if (schedule.status !== "active") {
+      if (!["active", "pending"].includes(schedule.status)) {
         logger.warn(`Schedule ${scheduleId} is not active (status: ${schedule.status})`);
         return;
       }
 
       logger.info(`Executing schedule: ${schedule.name} (${scheduleId})`);
+      await schedule.markRunning();
 
       // Get the channel
       const channel = await this.client.channels.fetch(schedule.channelId);
@@ -181,6 +193,7 @@ class SchedulerService {
 
       // Update schedule
       await schedule.markRan();
+      await incrementSchedulerExecution(schedule.guildId);
       logger.info(`Successfully executed schedule: ${schedule.name}`);
 
     } catch (error) {
@@ -191,6 +204,7 @@ class SchedulerService {
         const schedule = await Schedule.findById(scheduleId);
         if (schedule) {
           await schedule.incrementRetry();
+          await incrementSchedulerFailure(schedule.guildId);
           if (schedule.status === "failed") {
             logger.error(`Schedule ${scheduleId} marked as failed after ${schedule.maxRetries} retries`);
           }
@@ -198,6 +212,8 @@ class SchedulerService {
       } catch (retryError) {
         logger.error(`Failed to update schedule ${scheduleId} after error:`, retryError);
       }
+    } finally {
+      this.executingSchedules.delete(scheduleId);
     }
   }
 
@@ -228,6 +244,7 @@ class SchedulerService {
         // Append V2 content to existing content
         const originalContent = content || "";
         return sendHybridMessage(this.client, {
+          guildId: schedule.guildId,
           channelId: channel.id,
           content: originalContent ? `${originalContent}\n${v2Content}` : v2Content,
           embed: null,
@@ -241,6 +258,7 @@ class SchedulerService {
 
     // Use the existing sendHybridMessage function
     return sendHybridMessage(this.client, {
+      guildId: schedule.guildId,
       channelId: channel.id,
       content,
       embed,
@@ -256,6 +274,7 @@ class SchedulerService {
     return {
       isRunning: this.isRunning,
       activeJobs: this.cronJobs.size,
+      executingJobs: this.executingSchedules.size,
       clientReady: this.client?.isReady() || false
     };
   }
