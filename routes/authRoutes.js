@@ -7,11 +7,11 @@ const {
   getSession
 } = require("../controllers/authController");
 
-function createAuthRouter() {
+function createAuthRouter({ client } = {}) {
   const router = express.Router();
 
   router.get("/login", login);
-  router.get("/callback", callback);
+  router.get("/callback", callback({ client }));
   router.post("/logout", logout);
   router.get("/session", getSession);
 

@@ -1,6 +1,11 @@
 const Schedule = require("../models/Schedule");
 const logger = require("../utils/logger");
 const cron = require("node-cron");
+const {
+  getAccessibleGuildIds,
+  getGuildAccess,
+  hasCapability
+} = require("../services/permissionService");
 
 // Validate cron expression
 function isValidCronExpression(expression) {
@@ -16,11 +21,16 @@ function isValidCronExpression(expression) {
 async function getSchedules(req, res, next) {
   try {
     const { guildId, status } = req.query;
-    const userGuilds = (req.session.guilds || []).map(g => g.id);
+    const allowedGuildIds = getAccessibleGuildIds(req.session, "manage_settings", {
+      requireBotPresent: true
+    });
 
-    let query = { guildId: { $in: userGuilds } };
+    let query = { guildId: { $in: allowedGuildIds } };
 
     if (guildId) {
+      if (!allowedGuildIds.includes(guildId)) {
+        return res.status(403).json({ error: "Access denied to this guild." });
+      }
       query.guildId = guildId;
     }
 
@@ -43,15 +53,15 @@ async function getSchedules(req, res, next) {
 async function getSchedule(req, res, next) {
   try {
     const { id } = req.params;
-    const userGuilds = (req.session.guilds || []).map(g => g.id);
-
-    const schedule = await Schedule.findOne({
-      _id: id,
-      guildId: { $in: userGuilds }
-    }).lean();
+    const schedule = await Schedule.findById(id).lean();
 
     if (!schedule) {
       return res.status(404).json({ error: "Schedule not found." });
+    }
+
+    const access = getGuildAccess(req.session, schedule.guildId);
+    if (!access || !access.botPresent || !hasCapability(access, "manage_settings")) {
+      return res.status(403).json({ error: "Access denied to this guild." });
     }
 
     res.json(schedule);
@@ -83,9 +93,13 @@ async function createSchedule(req, res, next) {
     }
 
     // Check if user has access to guild
-    const userGuilds = (req.session.guilds || []).map(g => g.id);
-    if (!userGuilds.includes(guildId)) {
+    const access = getGuildAccess(req.session, guildId);
+    if (!access || !access.botPresent || !hasCapability(access, "manage_settings")) {
       return res.status(403).json({ error: "Access denied to this guild." });
+    }
+
+    if (!["embed", "hybrid", "components_v2"].includes(messageType)) {
+      return res.status(400).json({ error: "Invalid message type." });
     }
 
     // Validate schedule type
@@ -140,20 +154,31 @@ async function updateSchedule(req, res, next) {
   try {
     const { id } = req.params;
     const updates = req.body;
-    const userGuilds = (req.session.guilds || []).map(g => g.id);
+    const existing = await Schedule.findById(id);
+
+    if (!existing) {
+      return res.status(404).json({ error: "Schedule not found." });
+    }
+
+    const currentAccess = getGuildAccess(req.session, existing.guildId);
+    if (!currentAccess || !currentAccess.botPresent || !hasCapability(currentAccess, "manage_settings")) {
+      return res.status(403).json({ error: "Access denied to this guild." });
+    }
 
     // Remove immutable fields from updates
     const { _id, createdAt, updatedAt, __v, ...allowedUpdates } = updates;
 
-    const schedule = await Schedule.findOneAndUpdate(
-      { _id: id, guildId: { $in: userGuilds } },
-      allowedUpdates,
-      { new: true, runValidators: true }
-    );
-
-    if (!schedule) {
-      return res.status(404).json({ error: "Schedule not found." });
+    if (allowedUpdates.guildId && allowedUpdates.guildId !== existing.guildId) {
+      const targetAccess = getGuildAccess(req.session, allowedUpdates.guildId);
+      if (!targetAccess || !targetAccess.botPresent || !hasCapability(targetAccess, "manage_settings")) {
+        return res.status(403).json({ error: "Access denied to target guild." });
+      }
     }
+
+    const schedule = await Schedule.findByIdAndUpdate(id, allowedUpdates, {
+      new: true,
+      runValidators: true
+    });
 
     res.json(schedule);
   } catch (error) {
@@ -166,16 +191,17 @@ async function updateSchedule(req, res, next) {
 async function deleteSchedule(req, res, next) {
   try {
     const { id } = req.params;
-    const userGuilds = (req.session.guilds || []).map(g => g.id);
-
-    const schedule = await Schedule.findOneAndDelete({
-      _id: id,
-      guildId: { $in: userGuilds }
-    });
-
-    if (!schedule) {
+    const existing = await Schedule.findById(id);
+    if (!existing) {
       return res.status(404).json({ error: "Schedule not found." });
     }
+
+    const access = getGuildAccess(req.session, existing.guildId);
+    if (!access || !access.botPresent || !hasCapability(access, "manage_settings")) {
+      return res.status(403).json({ error: "Access denied to this guild." });
+    }
+
+    await Schedule.findByIdAndDelete(id);
 
     res.json({ success: true });
   } catch (error) {
@@ -189,21 +215,21 @@ async function toggleSchedule(req, res, next) {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userGuilds = (req.session.guilds || []).map(g => g.id);
+    const existing = await Schedule.findById(id);
+    if (!existing) {
+      return res.status(404).json({ error: "Schedule not found." });
+    }
+
+    const access = getGuildAccess(req.session, existing.guildId);
+    if (!access || !access.botPresent || !hasCapability(access, "manage_settings")) {
+      return res.status(403).json({ error: "Access denied to this guild." });
+    }
 
     if (!["active", "paused"].includes(status)) {
       return res.status(400).json({ error: "Invalid status. Must be 'active' or 'paused'." });
     }
 
-    const schedule = await Schedule.findOneAndUpdate(
-      { _id: id, guildId: { $in: userGuilds } },
-      { status },
-      { new: true }
-    );
-
-    if (!schedule) {
-      return res.status(404).json({ error: "Schedule not found." });
-    }
+    const schedule = await Schedule.findByIdAndUpdate(id, { status }, { new: true });
 
     res.json(schedule);
   } catch (error) {
@@ -215,10 +241,12 @@ async function toggleSchedule(req, res, next) {
 // Get schedule statistics
 async function getScheduleStats(req, res, next) {
   try {
-    const userGuilds = (req.session.guilds || []).map(g => g.id);
+    const allowedGuildIds = getAccessibleGuildIds(req.session, "manage_settings", {
+      requireBotPresent: true
+    });
 
     const stats = await Schedule.aggregate([
-      { $match: { guildId: { $in: userGuilds } } },
+      { $match: { guildId: { $in: allowedGuildIds } } },
       {
         $group: {
           _id: "$status",

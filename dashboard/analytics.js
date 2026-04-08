@@ -38,10 +38,10 @@ async function request(path, options = {}) {
 
 function escapeHtml(value) {
   return String(value || "")
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, '&#039;');
 }
 
@@ -107,6 +107,11 @@ async function initialize() {
     const session = await request("/auth/session");
     if (!session.authenticated) {
       window.location.href = "./index.html";
+      return;
+    }
+
+    if (!session.user?.accountCapabilities?.view_analytics && !session.user?.accountCapabilities?.full_access) {
+      showError("You do not have permission to view analytics.");
       return;
     }
 

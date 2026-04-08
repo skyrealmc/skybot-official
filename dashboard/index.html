@@ -108,7 +108,7 @@
         </div>
 
         <div class="topbar-right">
-          <a href="/scheduler" class="topbar-icon-btn" title="Scheduler">
+          <a href="/scheduler" class="topbar-icon-btn" id="schedulerLink" title="Scheduler">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -116,7 +116,7 @@
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
           </a>
-          <a href="/analytics" class="topbar-icon-btn" title="Analytics">
+          <a href="/analytics" class="topbar-icon-btn" id="analyticsLink" title="Analytics">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"></line>
               <line x1="12" y1="20" x2="12" y2="4"></line>
@@ -136,6 +136,11 @@
           </button>
         </div>
       </header>
+
+      <div id="accessNotice" class="hidden" style="margin: 10px 20px 0; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <span id="accessNoticeText">Access notice</span>
+        <a id="inviteBotBtn" class="btn-secondary-sm hidden" target="_blank" rel="noopener noreferrer">Invite Bot</a>
+      </div>
 
       <!-- Toolbar -->
       <div class="toolbar">

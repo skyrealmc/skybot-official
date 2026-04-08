@@ -19,9 +19,14 @@ function getBotAvatarUrl(user) {
 
 function createApp({ client }) {
   const app = express();
+  const isProduction = process.env.NODE_ENV === "production";
 
   // Initialize scheduler service
   const scheduler = new SchedulerService(client);
+
+  if (isProduction) {
+    app.set("trust proxy", 1);
+  }
 
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(express.json({ limit: "1mb" }));
@@ -34,7 +39,7 @@ function createApp({ client }) {
       cookie: {
         httpOnly: true,
         sameSite: "lax",
-        secure: false,
+        secure: isProduction,
         maxAge: 1000 * 60 * 60 * 8
       }
     })
@@ -55,7 +60,7 @@ function createApp({ client }) {
     next();
   });
 
-  app.use("/auth", authRouter());
+  app.use("/auth", authRouter({ client }));
   app.use("/api", apiRouter({ client, scheduler }));
 
   // Clean route redirects - redirect .html to clean routes

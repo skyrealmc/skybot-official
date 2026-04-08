@@ -6,6 +6,9 @@
 const state = {
   session: null,
   guilds: [],
+  guildById: {},
+  selectedGuildAccess: null,
+  accountCapabilities: {},
   channels: [],
   schedules: [],
   templates: [],
@@ -49,7 +52,10 @@ const elements = {
   mentionTarget: document.querySelector("#mentionTarget"),
   mentionTargetLabel: document.querySelector("#mentionTargetLabel"),
   addMentionBtn: document.querySelector("#addMentionBtn"),
-  mentionsContainer: document.querySelector("#mentionsContainer")
+  mentionsContainer: document.querySelector("#mentionsContainer"),
+  schedulerAccessNotice: document.querySelector("#schedulerAccessNotice"),
+  schedulerAccessText: document.querySelector("#schedulerAccessText"),
+  schedulerInviteBtn: document.querySelector("#schedulerInviteBtn")
 };
 
 // Utility Functions
@@ -73,11 +79,65 @@ async function request(path, options = {}) {
 
 function escapeHtml(value) {
   return String(value || "")
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, '&#039;');
+}
+
+function setSchedulerAccessNotice({ message, inviteUrl = "" } = {}) {
+  if (!elements.schedulerAccessNotice || !elements.schedulerAccessText) return;
+  if (!message) {
+    elements.schedulerAccessNotice.classList.add("hidden");
+    if (elements.schedulerInviteBtn) {
+      elements.schedulerInviteBtn.classList.add("hidden");
+      elements.schedulerInviteBtn.removeAttribute("href");
+    }
+    return;
+  }
+
+  elements.schedulerAccessNotice.classList.remove("hidden");
+  elements.schedulerAccessText.textContent = message;
+  if (elements.schedulerInviteBtn) {
+    if (inviteUrl) {
+      elements.schedulerInviteBtn.href = inviteUrl;
+      elements.schedulerInviteBtn.classList.remove("hidden");
+    } else {
+      elements.schedulerInviteBtn.classList.add("hidden");
+      elements.schedulerInviteBtn.removeAttribute("href");
+    }
+  }
+}
+
+function hasCapability(capability) {
+  return Boolean(state.selectedGuildAccess?.capabilities?.full_access || state.selectedGuildAccess?.capabilities?.[capability]);
+}
+
+function applySchedulerRestrictions() {
+  const selected = state.selectedGuildAccess;
+  const canManage = Boolean(selected?.botPresent && hasCapability("manage_settings"));
+
+  if (!selected) {
+    setSchedulerAccessNotice({
+      message: "No servers available for scheduling. Owner role is required for scheduler access."
+    });
+  } else if (!selected.botPresent) {
+    setSchedulerAccessNotice({
+      message: "Bot is not in this server. Invite the bot to schedule messages.",
+      inviteUrl: selected.inviteUrl || ""
+    });
+  } else if (!canManage) {
+    setSchedulerAccessNotice({
+      message: "You do not have permission to manage schedules for this server."
+    });
+  } else {
+    setSchedulerAccessNotice();
+  }
+
+  elements.saveScheduleBtn.disabled = !canManage;
+  elements.newScheduleBtn.disabled = !canManage;
+  elements.scheduleChannel.disabled = !canManage;
 }
 
 function formatDate(dateStr) {
@@ -189,7 +249,10 @@ function renderSchedules() {
 
 function renderGuilds() {
   elements.scheduleGuild.innerHTML = '<option value="">Select a server...</option>' + state.guilds
-    .map(guild => `<option value="${guild.id}">${escapeHtml(guild.name)}</option>`)
+    .map(guild => {
+      const suffix = guild.botPresent ? "" : " (Bot not added)";
+      return `<option value="${guild.id}">${escapeHtml(guild.name)}${suffix}</option>`;
+    })
     .join("");
 }
 
@@ -320,17 +383,17 @@ function loadScheduleIntoForm(schedule) {
 
 async function saveSchedule(e) {
   e.preventDefault();
-  console.log("Save button clicked");
+  if (!state.selectedGuildAccess || !state.selectedGuildAccess.botPresent || !hasCapability("manage_settings")) {
+    showToast("You do not have permission to manage schedules for this server", "error");
+    return;
+  }
 
   const guildId = elements.scheduleGuild.value;
   const channelId = elements.scheduleChannel.value;
   const name = elements.scheduleName.value.trim();
 
-  console.log("Form values:", { guildId, channelId, name, scheduleType: state.scheduleType });
-
   if (!guildId || !channelId || !name) {
     showToast("Please fill in all required fields", "error");
-    console.log("Validation failed - missing required fields");
     return;
   }
 
@@ -364,8 +427,6 @@ async function saveSchedule(e) {
     scheduleData.scheduledAt = new Date().toISOString();
   }
 
-  console.log("Sending schedule data:", scheduleData);
-
   try {
     if (state.currentScheduleId) {
       await request(`/api/schedules/${state.currentScheduleId}`, {
@@ -384,7 +445,6 @@ async function saveSchedule(e) {
     await loadSchedules();
     resetForm();
   } catch (error) {
-    console.error("Save error:", error);
     showToast(error.message || "Failed to save schedule", "error");
   }
 }
@@ -400,7 +460,12 @@ async function loadSchedules() {
 
 async function loadGuilds() {
   try {
-    state.guilds = await request("/api/guilds");
+    const guilds = await request("/api/guilds");
+    state.guilds = guilds.filter((guild) => guild.capabilities?.manage_settings || guild.capabilities?.full_access || !guild.botPresent);
+    state.guildById = state.guilds.reduce((acc, guild) => {
+      acc[guild.id] = guild;
+      return acc;
+    }, {});
     renderGuilds();
   } catch (error) {
     console.error("Failed to load guilds:", error);
@@ -418,7 +483,15 @@ async function loadTemplates() {
 
 async function loadChannels() {
   const guildId = elements.scheduleGuild.value;
+  state.selectedGuildAccess = state.guildById[guildId] || null;
+  applySchedulerRestrictions();
   if (!guildId) {
+    state.channels = [];
+    renderChannels();
+    return;
+  }
+
+  if (!state.selectedGuildAccess?.botPresent || !hasCapability("manage_settings")) {
     state.channels = [];
     renderChannels();
     return;
@@ -645,13 +718,36 @@ async function initialize() {
     }
 
     state.session = session;
-    state.guilds = session.guilds || [];
+    state.accountCapabilities = session.user?.accountCapabilities || {};
+
+    if (!state.accountCapabilities.manage_settings && !state.accountCapabilities.full_access) {
+      setSchedulerAccessNotice({
+        message: "Scheduler access is restricted to owners."
+      });
+      elements.scheduleForm.classList.add("hidden");
+      elements.emptyState.classList.remove("hidden");
+      return;
+    }
 
     await Promise.all([
       loadSchedules(),
       loadGuilds(),
       loadTemplates()
     ]);
+
+    const defaultGuild =
+      state.guilds.find((guild) => guild.botPresent && (guild.capabilities?.manage_settings || guild.capabilities?.full_access)) ||
+      state.guilds[0];
+    if (defaultGuild) {
+      elements.scheduleGuild.value = defaultGuild.id;
+      state.selectedGuildAccess = defaultGuild;
+      applySchedulerRestrictions();
+      await loadChannels();
+    } else {
+      setSchedulerAccessNotice({
+        message: "No servers available for scheduling. You need owner permissions in a server."
+      });
+    }
 
   } catch (error) {
     window.location.href = "./index.html";

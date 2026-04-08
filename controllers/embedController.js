@@ -1,5 +1,4 @@
 const {
-  assertGuildAccess,
   buildEmbedPayload,
   buildButtonRows,
   buildOutgoingContent,
@@ -8,25 +7,47 @@ const {
   fetchBotAnalytics,
   sendHybridMessage
 } = require("../services/discordService");
+const {
+  getGuildAccess,
+  hasCapability
+} = require("../services/permissionService");
 const { validateMessage } = require("../middlewares/validators");
-const { filterAllowedGuilds } = require("../middlewares/requireRole");
 
-function getGuilds(req, res) {
-  // Filter guilds by permission and then by allowed guilds
-  const userAllowedGuilds = req.session.user?.allowedGuilds || [];
-  const guilds = req.session.guilds || [];
-  const filteredGuilds = filterAllowedGuilds(guilds, userAllowedGuilds);
-  res.json(filteredGuilds);
+function getGuilds({ client }) {
+  return async (req, res) => {
+    const guildAccess = req.session.guildAccess || [];
+
+    if (client?.isReady && client.isReady()) {
+      const refreshed = guildAccess.map((guild) => {
+        const botPresent = client.guilds.cache.has(guild.id);
+        return {
+          ...guild,
+          botPresent,
+          available: botPresent
+        };
+      });
+      req.session.guildAccess = refreshed;
+      req.session.guilds = refreshed
+        .filter((guild) => guild.botPresent)
+        .map((guild) => ({
+          id: guild.id,
+          name: guild.name,
+          permissions: guild.permissions
+        }));
+      return res.json(refreshed);
+    }
+
+    return res.json(guildAccess);
+  };
 }
 
 function getChannels({ client }) {
   return async (req, res, next) => {
     try {
       const { guildId } = req.params;
-      const guilds = req.session.guilds || [];
-      const guild = guilds.find((entry) => entry.id === guildId);
+      const access = getGuildAccess(req.session, guildId);
 
-      if (!guild || !assertGuildAccess(guild)) {
+      if (!access || !access.botPresent || !hasCapability(access, "send_messages")) {
         return res.status(403).json({ error: "Unauthorized guild access." });
       }
 
@@ -42,10 +63,9 @@ function getGuildResources({ client }) {
   return async (req, res, next) => {
     try {
       const { guildId } = req.params;
-      const guilds = req.session.guilds || [];
-      const guild = guilds.find((entry) => entry.id === guildId);
+      const access = getGuildAccess(req.session, guildId);
 
-      if (!guild || !assertGuildAccess(guild)) {
+      if (!access || !access.botPresent || !hasCapability(access, "send_messages")) {
         return res.status(403).json({ error: "Unauthorized guild access." });
       }
 
@@ -60,7 +80,14 @@ function getGuildResources({ client }) {
 function getAnalytics({ client }) {
   return async (req, res, next) => {
     try {
-      const analytics = await fetchBotAnalytics(client, req.session.guilds || []);
+      const accessibleGuilds = (req.session.guildAccess || [])
+        .filter((guild) => guild.botPresent && hasCapability(guild, "view_analytics"))
+        .map((guild) => ({
+          id: guild.id,
+          name: guild.name,
+          permissions: guild.permissions
+        }));
+      const analytics = await fetchBotAnalytics(client, accessibleGuilds);
       return res.json(analytics);
     } catch (error) {
       return next(error);
@@ -73,10 +100,9 @@ function sendMessage({ client }) {
     try {
       validateMessage(req.body);
 
-      const guilds = req.session.guilds || [];
-      const guild = guilds.find((entry) => entry.id === req.body.guildId);
+      const access = getGuildAccess(req.session, req.body.guildId);
 
-      if (!guild || !assertGuildAccess(guild)) {
+      if (!access || !access.botPresent || !hasCapability(access, "send_messages")) {
         return res.status(403).json({ error: "Unauthorized guild access." });
       }
 

@@ -1,7 +1,7 @@
 const createAuthRouter = require("../routes/authRoutes");
 
-function authRouter() {
-  return createAuthRouter();
+function authRouter({ client }) {
+  return createAuthRouter({ client });
 }
 
 module.exports = authRouter;

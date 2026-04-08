@@ -3,6 +3,10 @@ const rateLimit = require("express-rate-limit");
 
 const requireAuth = require("../middlewares/requireAuth");
 const {
+  requireAccountCapability,
+  requireGuildCapability
+} = require("../middlewares/accessControl");
+const {
   getGuilds,
   getChannels,
   getGuildResources,
@@ -41,31 +45,31 @@ function createApiRouter({ client }) {
   router.use(limiter);
   router.use(requireAuth);
 
-  router.get("/guilds", getGuilds);
-  router.get("/analytics", getAnalytics({ client }));
-  router.get("/channels/:guildId", getChannels({ client }));
-  router.get("/resources/:guildId", getGuildResources({ client }));
-  router.get("/guild-resources/:guildId", getGuildResources({ client }));
-  router.post("/send-message", sendMessage({ client }));
-  router.post("/validate-message", validateMessagePayload);
+  router.get("/guilds", getGuilds({ client }));
+  router.get("/analytics", requireAccountCapability("view_analytics"), getAnalytics({ client }));
+  router.get("/channels/:guildId", requireGuildCapability("send_messages", { source: "params" }), getChannels({ client }));
+  router.get("/resources/:guildId", requireGuildCapability("send_messages", { source: "params" }), getGuildResources({ client }));
+  router.get("/guild-resources/:guildId", requireGuildCapability("send_messages", { source: "params" }), getGuildResources({ client }));
+  router.post("/send-message", requireGuildCapability("send_messages", { source: "body" }), sendMessage({ client }));
+  router.post("/validate-message", requireGuildCapability("send_messages", { source: "body" }), validateMessagePayload);
 
   // Template routes
-  router.post("/save-template", saveTemplate);
-  router.post("/import-template", importTemplate);
-  router.get("/templates", getTemplates);
-  router.get("/templates/:templateId/export", exportTemplate);
-  router.patch("/templates/:templateId/rename", renameTemplate);
-  router.delete("/templates/:templateId", deleteTemplate);
-  router.post("/templates/:templateId/duplicate", duplicateTemplate);
+  router.post("/save-template", requireAccountCapability("manage_templates"), saveTemplate);
+  router.post("/import-template", requireAccountCapability("manage_templates"), importTemplate);
+  router.get("/templates", requireAccountCapability("manage_templates"), getTemplates);
+  router.get("/templates/:templateId/export", requireAccountCapability("manage_templates"), exportTemplate);
+  router.patch("/templates/:templateId/rename", requireAccountCapability("manage_templates"), renameTemplate);
+  router.delete("/templates/:templateId", requireAccountCapability("manage_templates"), deleteTemplate);
+  router.post("/templates/:templateId/duplicate", requireAccountCapability("manage_templates"), duplicateTemplate);
 
   // Schedule routes
-  router.get("/schedules", getSchedules);
-  router.get("/schedules/stats", getScheduleStats);
-  router.get("/schedules/:id", getSchedule);
-  router.post("/schedules", createSchedule);
-  router.put("/schedules/:id", updateSchedule);
-  router.delete("/schedules/:id", deleteSchedule);
-  router.post("/schedules/:id/toggle", toggleSchedule);
+  router.get("/schedules", requireAccountCapability("manage_settings"), getSchedules);
+  router.get("/schedules/stats", requireAccountCapability("manage_settings"), getScheduleStats);
+  router.get("/schedules/:id", requireAccountCapability("manage_settings"), getSchedule);
+  router.post("/schedules", requireGuildCapability("manage_settings", { source: "body" }), createSchedule);
+  router.put("/schedules/:id", requireAccountCapability("manage_settings"), updateSchedule);
+  router.delete("/schedules/:id", requireAccountCapability("manage_settings"), deleteSchedule);
+  router.post("/schedules/:id/toggle", requireAccountCapability("manage_settings"), toggleSchedule);
 
   return router;
 }

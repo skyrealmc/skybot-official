@@ -13,10 +13,22 @@ const roleSchema = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ["admin", "moderator", "owner"],
+      enum: ["admin", "moderator", "owner", "viewer"],
       default: "moderator"
     },
     discordRoleId: { type: String, default: "" }
+  },
+  { _id: false }
+);
+
+const guildRoleSchema = new mongoose.Schema(
+  {
+    guildId: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ["owner", "admin", "moderator", "viewer"],
+      default: "viewer"
+    }
   },
   { _id: false }
 );
@@ -28,6 +40,7 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: null },
     guilds: { type: [guildSchema], default: [] },
     roles: { type: [roleSchema], default: [] },
+    guildRoles: { type: [guildRoleSchema], default: [] },
     allowedGuilds: { type: [String], default: [] },
     isGlobalAdmin: { type: Boolean, default: false }
   },

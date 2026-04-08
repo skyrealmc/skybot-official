@@ -18,6 +18,10 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - Guild and channel selector with live sidebar navigation
 - Template saving and management
 - Secure API routes with session auth
+- **Role and capability-based access control** (Owner/Admin/Moderator/Viewer)
+- **Guild filtering** (only guilds where user has Manage Guild or Administrator)
+- **Bot presence detection** per guild with invite link fallback
+- **Server-side permission enforcement** on all protected APIs
 - Basic rate limiting and centralized error handling
 - Analytics page for bot uptime, joined guilds, member totals, and guild breakdown
 - **Clean URL routing** - Modern SaaS-style URLs without .html extensions
@@ -30,6 +34,7 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - **Schedule management** - View, edit, pause, resume, and delete schedules
 - **Preset cron options** - Quick select for common schedules (daily, hourly, etc.)
 - **Timezone support** - Schedule messages in your local timezone
+- **Owner-level access control** for scheduler management
 
 ### Hybrid Message Builder
 - **Three-column layout** with left sidebar, center builder, and right preview
@@ -104,6 +109,28 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - For member mention selection:
   - enable `Server Members Intent` in the Discord Developer Portal under `Bot`
 
+## Access Control Model
+
+### Dashboard Roles
+- `Owner` - full access, settings, templates, sending, analytics
+- `Admin` - templates, sending, analytics
+- `Moderator` - sending only
+- `Viewer` - read-only
+
+### Guild Eligibility
+- User guilds are fetched from Discord OAuth.
+- Dashboard only keeps guilds where the user has `Manage Guild` or `Administrator`.
+- If the bot is not in a guild, the guild is marked unavailable and the UI provides an invite link.
+
+### Enforcement
+- The frontend only reflects permissions and never acts as the security boundary.
+- Every protected API validates:
+  - authenticated session
+  - guild access
+  - required capability
+  - bot presence (for guild actions)
+- Unauthorized requests are rejected with `401`, `403`, or `409` where appropriate.
+
 ## API Endpoints
 
 ### Authentication
@@ -116,22 +143,27 @@ Full-stack Discord bot and web dashboard for the official SKY REALM Minecraft co
 - `GET /api/guilds` - List accessible guilds
 - `GET /api/channels/:guildId` - List channels in a guild
 - `GET /api/resources/:guildId` - Get guild resources (channels, roles, members)
-- `GET /api/analytics` - Get bot analytics
-- `POST /api/send-message` - Send a message (embed, hybrid, or V2)
-- `POST /api/validate-message` - Validate message payload
+- `GET /api/analytics` - Get bot analytics (`view_analytics` required)
+- `POST /api/send-message` - Send a message (`send_messages` required)
+- `POST /api/validate-message` - Validate message payload (`send_messages` required)
 
 ### Templates
-- `POST /api/save-template` - Save a message template
-- `GET /api/templates` - List user's templates
+- `POST /api/save-template` - Save a message template (`manage_templates` required)
+- `POST /api/import-template` - Import a template (`manage_templates` required)
+- `GET /api/templates` - List user's templates (`manage_templates` required)
+- `GET /api/templates/:templateId/export` - Export template (`manage_templates` required)
+- `PATCH /api/templates/:templateId/rename` - Rename template (`manage_templates` required)
+- `DELETE /api/templates/:templateId` - Delete template (`manage_templates` required)
+- `POST /api/templates/:templateId/duplicate` - Duplicate template (`manage_templates` required)
 
 ### Schedules
-- `GET /api/schedules` - List all schedules
-- `GET /api/schedules/stats` - Get schedule statistics
-- `GET /api/schedules/:id` - Get a specific schedule
-- `POST /api/schedules` - Create a new schedule
-- `PUT /api/schedules/:id` - Update a schedule
-- `DELETE /api/schedules/:id` - Delete a schedule
-- `POST /api/schedules/:id/toggle` - Pause/resume a schedule
+- `GET /api/schedules` - List all schedules (`manage_settings` required)
+- `GET /api/schedules/stats` - Get schedule statistics (`manage_settings` required)
+- `GET /api/schedules/:id` - Get a specific schedule (`manage_settings` required)
+- `POST /api/schedules` - Create a new schedule (`manage_settings` required)
+- `PUT /api/schedules/:id` - Update a schedule (`manage_settings` required)
+- `DELETE /api/schedules/:id` - Delete a schedule (`manage_settings` required)
+- `POST /api/schedules/:id/toggle` - Pause/resume a schedule (`manage_settings` required)
 - `GET /scheduler/status` - Get scheduler service status
 
 ## Message Types
@@ -176,6 +208,7 @@ Container-based layout without embed:
 ## Notes
 
 - The bot login is skipped if `DISCORD_TOKEN` is empty.
+- The scheduler startup is skipped if `DISCORD_TOKEN` is empty.
 - The database connection is skipped if `MONGO_URI` is empty.
 - Interaction buttons currently reply with a simple ephemeral confirmation and are ready for custom behavior.
 - Empty button rows are ignored before save/send so unfinished slots do not trigger validation errors.
@@ -192,11 +225,15 @@ Container-based layout without embed:
 - **Mention Support in Scheduler** - @everyone, @here, roles, and channels
 - **Schedule Management API** - Full CRUD operations for schedules
 - **Scheduler Dashboard UI** - Dedicated page for managing scheduled messages
+- **SaaS-grade access control** - role/capability checks for UI and API
+- **Guild bot-presence validation** - unavailable guild handling + invite flow
 
 ### Fixed
 - Form validation issues with hidden required fields
 - Session structure compatibility in schedule controller
 - Module loading issues in scheduler JavaScript
+- Scheduler recurring runtime issue with undefined next-run helper
+- Frontend escaping issues in dashboard scripts
 
 ## Deployment (Railway)
 

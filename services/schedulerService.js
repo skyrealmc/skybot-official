@@ -25,6 +25,11 @@ class SchedulerService {
       return;
     }
 
+    if (!process.env.DISCORD_TOKEN) {
+      logger.warn("Scheduler start skipped because DISCORD_TOKEN is missing.");
+      return;
+    }
+
     logger.info("Starting scheduler service...");
     this.isRunning = true;
 

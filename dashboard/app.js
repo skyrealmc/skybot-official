@@ -7,6 +7,9 @@
 const state = {
   session: null,
   guilds: [],
+  guildById: {},
+  selectedGuildAccess: null,
+  accountCapabilities: {},
   channels: [],
   resources: { channels: [], roles: [], members: [] },
   templates: [],
@@ -54,7 +57,12 @@ const elements = {
   username: document.querySelector("#username"),
   logoutBtn: document.querySelector("#logoutBtn"),
   importTemplateBtn: document.querySelector("#importTemplateBtn"),
-  importFileInput: document.querySelector("#importFileInput")
+  importFileInput: document.querySelector("#importFileInput"),
+  accessNotice: document.querySelector("#accessNotice"),
+  accessNoticeText: document.querySelector("#accessNoticeText"),
+  inviteBotBtn: document.querySelector("#inviteBotBtn"),
+  analyticsLink: document.querySelector("#analyticsLink"),
+  schedulerLink: document.querySelector("#schedulerLink")
 };
 
 // Toast notification container
@@ -123,11 +131,87 @@ async function request(path, options = {}) {
 
 function escapeHtml(value) {
   return String(value || "")
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, '&#039;');
+}
+
+function hasCapability(capability) {
+  return Boolean(state.selectedGuildAccess?.capabilities?.full_access || state.selectedGuildAccess?.capabilities?.[capability]);
+}
+
+function hasAccountCapability(capability) {
+  return Boolean(state.accountCapabilities?.full_access || state.accountCapabilities?.[capability]);
+}
+
+function setAccessNotice({ message, inviteUrl = "", type = "info" } = {}) {
+  if (!elements.accessNotice || !elements.accessNoticeText) return;
+  if (!message) {
+    elements.accessNotice.classList.add("hidden");
+    if (elements.inviteBotBtn) {
+      elements.inviteBotBtn.classList.add("hidden");
+      elements.inviteBotBtn.removeAttribute("href");
+    }
+    return;
+  }
+
+  elements.accessNotice.classList.remove("hidden");
+  elements.accessNoticeText.textContent = message;
+  elements.accessNotice.style.borderColor = type === "error" ? "rgba(239,68,68,0.35)" : "var(--border)";
+
+  if (elements.inviteBotBtn) {
+    if (inviteUrl) {
+      elements.inviteBotBtn.href = inviteUrl;
+      elements.inviteBotBtn.classList.remove("hidden");
+    } else {
+      elements.inviteBotBtn.classList.add("hidden");
+      elements.inviteBotBtn.removeAttribute("href");
+    }
+  }
+}
+
+function applyAccountLevelRestrictions() {
+  if (elements.analyticsLink) {
+    elements.analyticsLink.classList.toggle("hidden", !hasAccountCapability("view_analytics"));
+  }
+  if (elements.schedulerLink) {
+    elements.schedulerLink.classList.toggle("hidden", !hasAccountCapability("manage_settings"));
+  }
+}
+
+function applyGuildRestrictions() {
+  const selected = state.selectedGuildAccess;
+  const canSend = Boolean(selected?.botPresent && hasCapability("send_messages"));
+  const canManageTemplates = Boolean(selected?.botPresent && hasCapability("manage_templates"));
+
+  if (!selected) {
+    setAccessNotice({
+      message: "No servers found or insufficient permissions. You need Manage Server or Administrator in at least one server.",
+      type: "error"
+    });
+  } else if (!selected.botPresent) {
+    setAccessNotice({
+      message: "Bot is not in this server. Invite the bot to enable dashboard actions.",
+      inviteUrl: selected.inviteUrl || "",
+      type: "error"
+    });
+  } else if (!canSend) {
+    setAccessNotice({
+      message: "You do not have permission to send messages in this dashboard for the selected server.",
+      type: "error"
+    });
+  } else {
+    setAccessNotice();
+  }
+
+  if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = !canSend;
+  if (elements.saveTemplateBtn) elements.saveTemplateBtn.disabled = !canManageTemplates;
+  if (elements.channelSelect) elements.channelSelect.disabled = !canSend;
+  if (elements.addButtonBtn) elements.addButtonBtn.disabled = !canSend;
+  if (elements.addMentionBtn) elements.addMentionBtn.disabled = !canSend;
+  if (elements.addContainerBtn) elements.addContainerBtn.disabled = !canSend;
 }
 
 function debounce(fn, delay) {
@@ -647,7 +731,10 @@ function renderItemFields(container, child, containerIndex, childIndex) {
 
 function renderGuilds() {
   elements.guildSelect.innerHTML = '<option value="">Select a server...</option>' + state.guilds
-    .map((guild) => `<option value="${guild.id}">${escapeHtml(guild.name)}</option>`)
+    .map((guild) => {
+      const suffix = guild.botPresent ? "" : " (Bot not added)";
+      return `<option value="${guild.id}">${escapeHtml(guild.name)}${suffix}</option>`;
+    })
     .join("");
 }
 
@@ -664,7 +751,16 @@ function renderChannels(selectedChannelId = elements.channelSelect.value) {
 async function loadChannels() {
   const guildId = elements.guildSelect.value;
   const selectedChannelId = elements.channelSelect.value;
+  state.selectedGuildAccess = state.guildById[guildId] || null;
+  applyGuildRestrictions();
+
   if (!guildId) {
+    state.channels = [];
+    renderChannels();
+    return;
+  }
+
+  if (!state.selectedGuildAccess?.botPresent || !hasCapability("send_messages")) {
     state.channels = [];
     renderChannels();
     return;
@@ -681,6 +777,12 @@ async function loadChannels() {
 async function loadGuildResources() {
   const guildId = elements.guildSelect.value;
   if (!guildId) {
+    state.resources = { channels: [], roles: [], members: [] };
+    renderMentions();
+    return;
+  }
+
+  if (!state.selectedGuildAccess?.botPresent || !hasCapability("send_messages")) {
     state.resources = { channels: [], roles: [], members: [] };
     renderMentions();
     return;
@@ -869,6 +971,11 @@ function applyQuickTemplate(templateId) {
 // ============================================
 
 async function saveTemplate() {
+  if (!state.selectedGuildAccess || !state.selectedGuildAccess.botPresent || !hasCapability("manage_templates")) {
+    showToast("Template management is not allowed for this server.", "error");
+    return;
+  }
+
   try {
     await request("/api/save-template", {
       method: "POST",
@@ -890,6 +997,11 @@ async function saveTemplate() {
 }
 
 async function sendMessage() {
+  if (!state.selectedGuildAccess || !state.selectedGuildAccess.botPresent || !hasCapability("send_messages")) {
+    showToast("You do not have permission to send messages for this server.", "error");
+    return;
+  }
+
   const btn = elements.sendMessageBtn;
   const spinner = btn.querySelector(".btn-spinner");
   const icon = btn.querySelector(".btn-icon");
@@ -950,6 +1062,11 @@ async function logout() {
 // ============================================
 
 async function handleTemplateAction(templateId, action) {
+  if (!state.selectedGuildAccess || !state.selectedGuildAccess.botPresent || !hasCapability("manage_templates")) {
+    showToast("Template management is not allowed for this server.", "error");
+    return;
+  }
+
   const template = state.templates.find(t => t._id === templateId);
   if (!template) return;
 
@@ -1207,6 +1324,11 @@ async function initialize() {
     // User is authenticated - show dashboard
     state.session = session;
     state.guilds = session.guilds || [];
+    state.guildById = state.guilds.reduce((acc, guild) => {
+      acc[guild.id] = guild;
+      return acc;
+    }, {});
+    state.accountCapabilities = session.user?.accountCapabilities || {};
 
     // Store bot info for preview
     if (session.bot) {
@@ -1222,15 +1344,31 @@ async function initialize() {
       elements.username.textContent = session.user.username;
     }
 
+    applyAccountLevelRestrictions();
+
     // Show dashboard, hide login
     if (elements.loginPage) elements.loginPage.classList.add("hidden");
     if (elements.dashboardPage) elements.dashboardPage.classList.remove("hidden");
 
     // Load data
     renderGuilds();
+    const defaultGuild =
+      state.guilds.find((guild) => guild.botPresent && guild.capabilities?.send_messages) ||
+      state.guilds.find((guild) => guild.botPresent) ||
+      state.guilds[0];
+    if (defaultGuild && elements.guildSelect) {
+      elements.guildSelect.value = defaultGuild.id;
+      state.selectedGuildAccess = defaultGuild;
+    }
+    applyGuildRestrictions();
     await loadChannels();
     await loadGuildResources();
-    await loadTemplates();
+    if (hasAccountCapability("manage_templates")) {
+      await loadTemplates();
+    } else {
+      state.templates = [];
+      renderTemplates();
+    }
     renderMentions();
     renderPreview();
 

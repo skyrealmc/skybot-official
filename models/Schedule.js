@@ -1,5 +1,11 @@
 const mongoose = require("mongoose");
 
+function getRecurringNextRun() {
+  // Recurring schedules are executed by active in-memory cron jobs.
+  // Keep nextRun fresh for UI sorting without relying on external cron parsers.
+  return new Date(Date.now() + 60 * 1000);
+}
+
 const scheduleSchema = new mongoose.Schema(
   {
     guildId: {
@@ -88,10 +94,7 @@ scheduleSchema.pre("save", function (next) {
     if (this.scheduleType === "one_time") {
       this.nextRun = this.scheduledAt;
     } else if (this.scheduleType === "recurring" && this.cronExpression) {
-      // Calculate next run based on cron expression
-      const cron = require("node-cron");
-      const nextDate = crongetNextSchedule(this.cronExpression, new Date());
-      this.nextRun = nextDate;
+      this.nextRun = getRecurringNextRun();
     }
   }
   next();
@@ -110,9 +113,7 @@ scheduleSchema.methods.markRan = function () {
   this.retryCount = 0;
 
   if (this.scheduleType === "recurring" && this.cronExpression) {
-    const cron = require("node-cron");
-    const nextDate = crongetNextSchedule(this.cronExpression, new Date());
-    this.nextRun = nextDate;
+    this.nextRun = getRecurringNextRun();
   } else {
     this.status = "completed";
   }
