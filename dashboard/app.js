@@ -1245,6 +1245,10 @@ async function deleteTemplate(templateId) {
 const debouncedPreview = debounce(renderPreview, 150);
 
 async function initialize() {
+  // Prevent login/dashboard flicker during async session check.
+  if (elements.loginPage) elements.loginPage.classList.add("hidden");
+  if (elements.dashboardPage) elements.dashboardPage.classList.add("hidden");
+
   await loadPublicBotInfo();
 
   // Initialize UI components
