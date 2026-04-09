@@ -1,27 +1,29 @@
 const logger = require("../utils/logger");
+const { MessageFlags } = require("discord.js");
 const { checkCommandAccess } = require("../services/commands/commandAccessService");
 const {
   incrementCommandUsage,
   incrementCommandError
 } = require("../services/metricsService");
+const { normalizeInteractionPayload } = require("../services/commands/reply");
 
 // Custom button responses
 const BUTTON_RESPONSES = {
   event_interested: {
     content: "🎉 Awesome! Your interest has been recorded. We'll see you at the event!",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   },
   event_not_interested: {
     content: "No problem! Maybe next time. 😊",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   },
   join_server: {
     content: "🎮 Thanks for your interest! Use the link button to join our server.",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   },
   discord_link: {
     content: "💬 Click the link button to join our Discord community!",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   }
 };
 
@@ -41,7 +43,7 @@ function registerInteractionHandler(client) {
         // Default response for unknown buttons
         await interaction.reply({
           content: "✅ Button received! Thank you for your interaction.",
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -50,7 +52,7 @@ function registerInteractionHandler(client) {
         if (!interaction.inGuild()) {
           await interaction.reply({
             content: "This command can only be used in a server.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -59,7 +61,7 @@ function registerInteractionHandler(client) {
         if (!command) {
           await interaction.reply({
             content: "Unknown command.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -68,7 +70,7 @@ function registerInteractionHandler(client) {
         if (!access.ok) {
           await interaction.reply({
             content: access.reason || "This command is disabled for this server.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -95,15 +97,15 @@ function registerInteractionHandler(client) {
 
       const response = {
         content: "⚠️ Something went wrong while processing that interaction.",
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       };
 
       if (interaction.deferred || interaction.replied) {
-        await interaction.followUp(response).catch(() => {});
+        await interaction.followUp(normalizeInteractionPayload(response)).catch(() => {});
         return;
       }
 
-      await interaction.reply(response).catch(() => {});
+      await interaction.reply(normalizeInteractionPayload(response)).catch(() => {});
     }
   });
 }

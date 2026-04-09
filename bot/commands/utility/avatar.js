@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 
 module.exports = {
   category: "utility",
@@ -11,7 +11,6 @@ module.exports = {
     const url = user.displayAvatarURL({ size: 1024, extension: "png", forceStatic: false });
 
     const embed = new EmbedBuilder().setTitle(`${user.tag} Avatar`).setImage(url).setColor("#5865f2");
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   }
 };
-

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 
 module.exports = {
   category: "utility",
@@ -24,7 +24,7 @@ module.exports = {
     if (options.length < 2) {
       return interaction.reply({
         content: "Provide at least 2 options separated by |",
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -38,7 +38,6 @@ module.exports = {
       await msg.react(emojis[i]);
     }
 
-    await interaction.reply({ content: "Poll created.", ephemeral: true });
+    await interaction.reply({ content: "Poll created.", flags: MessageFlags.Ephemeral });
   }
 };
-
