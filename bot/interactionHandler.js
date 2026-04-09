@@ -1,4 +1,9 @@
 const logger = require("../utils/logger");
+const { checkCommandAccess } = require("../services/commands/commandAccessService");
+const {
+  incrementCommandUsage,
+  incrementCommandError
+} = require("../services/metricsService");
 
 // Custom button responses
 const BUTTON_RESPONSES = {
@@ -42,10 +47,39 @@ function registerInteractionHandler(client) {
       }
 
       if (interaction.isChatInputCommand()) {
-        await interaction.reply({
-          content: `⚙️ Command received: ${interaction.commandName}`,
-          ephemeral: true
-        });
+        if (!interaction.inGuild()) {
+          await interaction.reply({
+            content: "This command can only be used in a server.",
+            ephemeral: true
+          });
+          return;
+        }
+
+        const command = interaction.client.commands?.get(interaction.commandName);
+        if (!command) {
+          await interaction.reply({
+            content: "Unknown command.",
+            ephemeral: true
+          });
+          return;
+        }
+
+        const access = await checkCommandAccess(interaction.guildId, command);
+        if (!access.ok) {
+          await interaction.reply({
+            content: access.reason || "This command is disabled for this server.",
+            ephemeral: true
+          });
+          return;
+        }
+
+        try {
+          await command.execute(interaction, { guildConfig: access.config });
+          await incrementCommandUsage(interaction.guildId, interaction.commandName);
+        } catch (commandError) {
+          await incrementCommandError(interaction.guildId);
+          throw commandError;
+        }
       }
     } catch (error) {
       // Ignore "Interaction has already been acknowledged" errors

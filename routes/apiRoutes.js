@@ -33,6 +33,10 @@ const {
   toggleSchedule,
   getScheduleStats
 } = require("../controllers/scheduleController");
+const {
+  getGuildCommandConfig,
+  updateGuildCommandConfig
+} = require("../controllers/guildConfigController");
 
 function createApiRouter({ client }) {
   const router = express.Router();
@@ -84,6 +88,19 @@ function createApiRouter({ client }) {
   router.put("/schedules/:id", requireAccountCapability("manage_settings"), updateSchedule);
   router.delete("/schedules/:id", requireAccountCapability("manage_settings"), deleteSchedule);
   router.post("/schedules/:id/toggle", requireAccountCapability("manage_settings"), toggleSchedule);
+
+  // Guild command configuration
+  router.get(
+    "/guild-config/:guildId",
+    requireGuildCapability("manage_settings", { source: "params" }),
+    getGuildCommandConfig()
+  );
+  router.patch(
+    "/guild-config/:guildId",
+    requireGuildCapability("manage_settings", { source: "params" }),
+    scheduleCreateLimiter,
+    updateGuildCommandConfig({ client })
+  );
 
   return router;
 }

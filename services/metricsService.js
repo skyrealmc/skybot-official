@@ -26,6 +26,27 @@ async function incrementSchedulerFailure(guildId) {
   await incrementMetric(guildId, "schedulerFailures", 1);
 }
 
+async function incrementModerationAction(guildId) {
+  await incrementMetric(guildId, "moderationActions", 1);
+}
+
+async function incrementCommandError(guildId) {
+  await incrementMetric(guildId, "commandErrors", 1);
+}
+
+async function incrementCommandUsage(guildId, commandName) {
+  if (!guildId || !commandName) return;
+  try {
+    await Metric.findOneAndUpdate(
+      { guildId },
+      { $inc: { [`commandUsage.${commandName}`]: 1 } },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+  } catch (error) {
+    logger.warn(`Failed to increment command usage for ${commandName} in guild ${guildId}: ${error.message}`);
+  }
+}
+
 async function getGuildMetricsMap(guildIds = []) {
   if (!Array.isArray(guildIds) || guildIds.length === 0) {
     return new Map();
@@ -39,5 +60,8 @@ module.exports = {
   incrementMessageSent,
   incrementSchedulerExecution,
   incrementSchedulerFailure,
+  incrementModerationAction,
+  incrementCommandError,
+  incrementCommandUsage,
   getGuildMetricsMap
 };

@@ -66,6 +66,7 @@ Examples:
 - Template routes require account capability `manage_templates`
 - Scheduler routes require `manage_settings`
 - Analytics requires `view_analytics`
+- Guild command config routes (`/api/guild-config/:guildId`) require `manage_settings`
 
 Unauthorized access returns structured errors:
 - `401` unauthenticated
@@ -78,12 +79,15 @@ Unauthorized access returns structured errors:
 - Channel is validated against selected guild on backend.
 - Message/scheduler payloads are validated and sanitized server-side.
 - Route-level rate limiting is enabled globally and for sensitive actions.
+- Slash command execution validates per-guild config and feature flags on backend.
+- Moderation logging channel updates are validated against target guild ownership.
 
 ## Operational Notes
 
 - If `DISCORD_TOKEN` is missing, bot login and scheduler startup are skipped.
 - Bot status is exposed via `GET /api/bot-status` for UI action gating.
 - Session store uses Mongo in production (`connect-mongo`).
+- Optional `COMMAND_GUILD_ID` enables guild-scoped slash command registration for safer testing.
 
 ## Admin Setup Example
 

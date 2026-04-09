@@ -172,6 +172,10 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 - `POST /api/schedules/:id/toggle` - Pause/resume a schedule (`manage_settings` required)
 - `GET /scheduler/status` - Get scheduler service status
 
+### Guild Command Config
+- `GET /api/guild-config/:guildId` - Get guild command config (`manage_settings` required)
+- `PATCH /api/guild-config/:guildId` - Update command toggles/feature flags/mod-log channel (`manage_settings` required)
+
 ## Message Types
 
 ### 1. Embed Only
@@ -216,12 +220,14 @@ Container-based layout without embed:
 - The bot login is skipped if `DISCORD_TOKEN` is empty.
 - The scheduler startup is skipped if `DISCORD_TOKEN` is empty.
 - The database connection is skipped if `MONGO_URI` is empty.
+- Use `COMMAND_GUILD_ID` (optional) to register slash commands to one test guild instead of globally.
 - Session storage uses MongoDB (`connect-mongo`) when `MONGO_URI` is set; otherwise it falls back to in-memory sessions for local/dev only.
 - Message sending and scheduler creation are blocked while the bot is offline.
 - Guild/channel checks are validated server-side to prevent cross-guild spoofing.
 - Interaction buttons currently reply with a simple ephemeral confirmation and are ready for custom behavior.
 - Empty button rows are ignored before save/send so unfinished slots do not trigger validation errors.
 - The bot startup uses the current `clientReady` event name for discord.js compatibility.
+- AFK mention and auto-clear behavior is backed by MongoDB and Discord message events.
 - If `Server Members Intent` is disabled or member fetch times out, member mention options are limited but the dashboard still works.
 - The real dashboard is intended to run through the Express server, not directly from the filesystem.
 - A separate isolated demo sandbox exists in `dashboard/demo/` and is excluded from git.
@@ -240,6 +246,19 @@ Container-based layout without embed:
 - **Bot status API** - synchronized status badge and action gating in UI
 - **Dynamic bot branding in UI** - topbar/login now load live bot avatar and bot name
 - **Public bot info endpoint** - login and page headers can render bot profile details
+- **Phase 1 slash command system** - modular command folders with dynamic load/register flow
+- **Moderation + utility + admin command pack** - includes warn tracking, polls, reminders, AFK, and quick embeds
+- **Guild command config endpoints** - manage command allow-lists, category flags, and mod-log channel per guild
+- **Command analytics counters** - tracks command usage and command errors per guild
+- **Slash command framework** with dynamic loader + centralized execution path
+- **Per-guild command control API** for command allow-lists, category flags, and mod-log channel
+
+### Bot Commands (Phase 1 Core)
+- Moderation: `/ban`, `/kick`, `/timeout`, `/untimeout`, `/warn`
+- Utility: `/userinfo`, `/serverinfo`, `/avatar`, `/roleinfo`, `/poll`, `/remind`, `/afk`
+- Admin: `/embed`
+- Command usage/errors and moderation actions are tracked in guild metrics.
+- Command access is validated with guild config and feature flags before execution.
 
 ### Fixed
 - Form validation issues with hidden required fields

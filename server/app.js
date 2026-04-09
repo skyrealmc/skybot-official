@@ -171,6 +171,7 @@ function createApp({ client }) {
   const gracefulShutdown = async (signal) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
     await scheduler.stop();
+    client?.reminderService?.stop();
     process.exit(0);
   };
 
