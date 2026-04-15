@@ -1305,6 +1305,8 @@
                 console.error('Error loading embed template:', error);
             }
         }
+
+        function updateEmbedPreview() {
             const previewElement = document.getElementById('embedPreview');
             if (!previewElement) return;
             
@@ -1405,6 +1407,8 @@
 
             previewElement.innerHTML = previewHTML;
         }
+
+        async function saveEmbedTemplate(type = 'approved') {
             const isApproved = type === 'approved';
             const guildId = isApproved ? 
                 document.getElementById('embedGuildSelect').value : 
@@ -1458,39 +1462,6 @@
                 alert('Failed to save template');
             }
         }
-            const guildId = document.getElementById('embedGuildSelect').value;
-            const channelId = document.getElementById('embedChannelSelect').value;
-
-            if (!guildId || !channelId) {
-                alert('Please select both a server and channel');
-                return;
-            }
-
-            const embedTemplate = {
-                title: document.getElementById('embedTitle').value,
-                description: document.getElementById('embedDescription').value,
-                color: document.getElementById('embedColor').value,
-                footer: document.getElementById('embedFooter').value,
-                author: document.getElementById('embedAuthor').value,
-                includeTimestamp: document.getElementById('embedTimestamp').checked
-            };
-
-            try {
-                const response = await fetch(`/api/whitelist/config/${guildId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ channelId, embedTemplate })
-                });
-
-                if (!response.ok) throw new Error('Failed to save config');
-
-                alert('✅ Embed template saved successfully!');
-            } catch (error) {
-                console.error('Error saving template:', error);
-                alert('Failed to save template');
-            }
-        }
 
         async function testEmbedMessage(type = 'approved') {
             const isApproved = type === 'approved';
@@ -1513,13 +1484,6 @@
                 alert('Failed to send test message');
             }
         }
-
-        // Initialize embed customizer on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            loadApplications();
-            setupEventListeners();
-            initializeEmbedCustomizer();
-        });
 
     </script>
 </body>
