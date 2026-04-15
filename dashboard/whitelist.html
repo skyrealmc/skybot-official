@@ -939,6 +939,7 @@
             await loadGuilds();
             await loadEmbedTemplate();
             setupEmbedListeners();
+            updateEmbedPreview();
         }
 
         function setupEmbedListeners() {
@@ -1048,12 +1049,15 @@
         }
 
         function updateEmbedPreview() {
-            const title = document.getElementById('embedTitle').value || '✅ Whitelist Application Approved';
-            const description = document.getElementById('embedDescription').value || 'Welcome to Sky Realms SMP!';
-            const color = document.getElementById('embedColor').value || '#28a745';
-            const footer = document.getElementById('embedFooter').value || 'Sky Realms SMP';
-            const author = document.getElementById('embedAuthor').value || 'Whitelist System';
-            const timestamp = document.getElementById('embedTimestamp').checked;
+            const previewElement = document.getElementById('embedPreview');
+            if (!previewElement) return;
+            
+            const title = document.getElementById('embedTitle')?.value || '✅ Whitelist Application Approved';
+            const description = document.getElementById('embedDescription')?.value || 'Welcome to Sky Realms SMP!';
+            const color = document.getElementById('embedColor')?.value || '#28a745';
+            const footer = document.getElementById('embedFooter')?.value || 'Sky Realms SMP';
+            const author = document.getElementById('embedAuthor')?.value || 'Whitelist System';
+            const timestamp = document.getElementById('embedTimestamp')?.checked ?? true;
 
             const previewHTML = `
                 <div style="
@@ -1092,7 +1096,7 @@
                 </div>
             `;
 
-            document.getElementById('embedPreview').innerHTML = previewHTML;
+            previewElement.innerHTML = previewHTML;
         }
 
         async function saveEmbedTemplate() {
