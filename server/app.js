@@ -1,5 +1,6 @@
 const express = require("express");
 const helmet = require("helmet");
+const cors = require("cors");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const path = require("path");
@@ -30,6 +31,18 @@ function createApp({ client }) {
   if (isProduction) {
     app.set("trust proxy", 1);
   }
+
+  // CORS Configuration for cross-domain requests (official website → bot API)
+  app.use(cors({
+    origin: [
+      'https://skyrealm.fun',
+      'http://localhost:5000',
+      'http://localhost:3000'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
 
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(express.json({ limit: "1mb" }));
