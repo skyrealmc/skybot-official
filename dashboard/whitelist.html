@@ -973,12 +973,19 @@
 
             try {
                 const guildId = document.getElementById('embedGuildSelect').value;
+                const channelId = document.getElementById('embedChannelSelect').value;
                 lastSelectedGuild = guildId;
+                
+                if (!guildId || !channelId) {
+                    alert('Please select both a server and channel');
+                    return;
+                }
+
                 const response = await fetch(`/api/whitelist/approve/${currentApplicationId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ notificationGuildId: guildId })
+                    body: JSON.stringify({ notificationGuildId: guildId, notificationChannelId: channelId })
                 });
 
                 if (!response.ok) throw new Error('Failed to approve');
@@ -1000,12 +1007,19 @@
 
             try {
                 const guildId = document.getElementById('embedGuildSelectRejected').value;
+                const channelId = document.getElementById('embedChannelSelectRejected').value;
                 lastSelectedGuild = guildId;
+                
+                if (!guildId || !channelId) {
+                    alert('Please select both a server and channel');
+                    return;
+                }
+
                 const response = await fetch(`/api/whitelist/reject/${currentApplicationId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ notificationGuildId: guildId })
+                    body: JSON.stringify({ notificationGuildId: guildId, notificationChannelId: channelId })
                 });
 
                 if (!response.ok) throw new Error('Failed to reject');
@@ -1048,9 +1062,15 @@
             }
 
             const notificationGuildId = lastSelectedGuild;
+            const notificationChannelId = document.getElementById('embedChannelSelect')?.value;
 
             if (!notificationGuildId) {
                 alert('Please approve or reject the application first to set a guild, or select a guild in the customizer');
+                return;
+            }
+
+            if (!notificationChannelId) {
+                alert('Please select a channel to send the notification to');
                 return;
             }
 
@@ -1058,7 +1078,7 @@
                 const response = await fetch(`/api/whitelist/${currentApplicationId}/resend`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notificationGuildId }),
+                    body: JSON.stringify({ notificationGuildId, notificationChannelId }),
                     credentials: 'include'
                 });
 

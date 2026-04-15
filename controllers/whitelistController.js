@@ -73,7 +73,7 @@ async function listApplications(req, res) {
 async function approveApplicationEndpoint(req, res) {
   try {
     const { id } = req.params;
-    const { notificationGuildId } = req.body;
+    const { notificationGuildId, notificationChannelId } = req.body;
     const adminId = req.session.user?.id;
     const client = req.app.locals.discordClient;
 
@@ -83,18 +83,37 @@ async function approveApplicationEndpoint(req, res) {
 
     const application = await approveApplication(id, adminId);
 
-    // Auto-send Discord notification using saved config
+    // Auto-send Discord notification using provided channel or saved config
     let notificationSent = false;
     if (client && notificationGuildId) {
       try {
-        const config = await getWhitelistConfig(notificationGuildId);
+        let channelId = notificationChannelId;
+        let roleId = null;
+        let embedTemplate = null;
 
-        if (config && config.channelId) {
+        // If no channel ID provided, try to load from config
+        if (!channelId) {
+          const config = await getWhitelistConfig(notificationGuildId);
+          if (config && config.channelId) {
+            channelId = config.channelId;
+            roleId = config.roleId;
+            embedTemplate = config.embedTemplate;
+          }
+        } else {
+          // If channel ID was provided, still try to load template from config
+          const config = await getWhitelistConfig(notificationGuildId);
+          if (config) {
+            roleId = config.roleId;
+            embedTemplate = config.embedTemplate;
+          }
+        }
+
+        if (channelId) {
           const notificationSuccess = await sendWhitelistApproved(client, application, {
-            channelId: config.channelId,
+            channelId,
             guildId: notificationGuildId,
-            roleId: config.roleId,
-            embedTemplate: config.embedTemplate
+            roleId,
+            embedTemplate
           });
 
           notificationSent = notificationSuccess;
@@ -127,7 +146,7 @@ async function approveApplicationEndpoint(req, res) {
 async function rejectApplicationEndpoint(req, res) {
   try {
     const { id } = req.params;
-    const { notificationGuildId } = req.body;
+    const { notificationGuildId, notificationChannelId } = req.body;
     const adminId = req.session.user?.id;
     const client = req.app.locals.discordClient;
 
@@ -137,17 +156,33 @@ async function rejectApplicationEndpoint(req, res) {
 
     const application = await rejectApplication(id, adminId);
 
-    // Auto-send Discord rejection notification using saved config
+    // Auto-send Discord rejection notification using provided channel or saved config
     let notificationSent = false;
     if (client && notificationGuildId) {
       try {
-        const config = await getWhitelistConfig(notificationGuildId);
+        let channelId = notificationChannelId;
+        let embedTemplate = null;
 
-        if (config && config.channelId) {
+        // If no channel ID provided, try to load from config
+        if (!channelId) {
+          const config = await getWhitelistConfig(notificationGuildId);
+          if (config && config.channelId) {
+            channelId = config.channelId;
+            embedTemplate = config.rejectionTemplate;
+          }
+        } else {
+          // If channel ID was provided, still try to load template from config
+          const config = await getWhitelistConfig(notificationGuildId);
+          if (config) {
+            embedTemplate = config.rejectionTemplate;
+          }
+        }
+
+        if (channelId) {
           const notificationSuccess = await sendWhitelistRejected(client, application, {
-            channelId: config.channelId,
+            channelId,
             guildId: notificationGuildId,
-            embedTemplate: config.rejectionTemplate
+            embedTemplate
           });
 
           notificationSent = notificationSuccess;
@@ -206,7 +241,7 @@ async function deleteApplicationEndpoint(req, res) {
 async function resendApplicationNotification(req, res) {
   try {
     const { id } = req.params;
-    const { notificationGuildId } = req.body;
+    const { notificationGuildId, notificationChannelId } = req.body;
     const adminId = req.session.user?.id;
     const client = req.app.locals.discordClient;
 
@@ -224,18 +259,37 @@ async function resendApplicationNotification(req, res) {
       return res.status(400).json({ error: "Only approved applications can have notifications resent" });
     }
 
-    // Resend Discord notification using saved config
+    // Resend Discord notification using provided channel or saved config
     let notificationSent = false;
     if (client) {
       try {
-        const config = await getWhitelistConfig(notificationGuildId);
+        let channelId = notificationChannelId;
+        let roleId = null;
+        let embedTemplate = null;
 
-        if (config && config.channelId) {
+        // If no channel ID provided, try to load from config
+        if (!channelId) {
+          const config = await getWhitelistConfig(notificationGuildId);
+          if (config && config.channelId) {
+            channelId = config.channelId;
+            roleId = config.roleId;
+            embedTemplate = config.embedTemplate;
+          }
+        } else {
+          // If channel ID was provided, still try to load template from config
+          const config = await getWhitelistConfig(notificationGuildId);
+          if (config) {
+            roleId = config.roleId;
+            embedTemplate = config.embedTemplate;
+          }
+        }
+
+        if (channelId) {
           const notificationSuccess = await sendWhitelistApproved(client, application, {
-            channelId: config.channelId,
+            channelId,
             guildId: notificationGuildId,
-            roleId: config.roleId,
-            embedTemplate: config.embedTemplate
+            roleId,
+            embedTemplate
           });
 
           notificationSent = notificationSuccess;
