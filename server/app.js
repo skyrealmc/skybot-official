@@ -72,7 +72,9 @@ function createApp({ client }) {
         avatarUrl: getBotAvatarUrl(client.user)
       };
     }
-    // Store scheduler reference for API access
+    // Store scheduler and client references for API access
+    app.locals.scheduler = scheduler;
+    app.locals.discordClient = client;
     req.app.set("scheduler", scheduler);
     req.app.set("discordClient", client);
     next();
@@ -109,6 +111,10 @@ function createApp({ client }) {
 
   app.get("/scheduler", (_req, res) => {
     res.sendFile(path.join(__dirname, "..", "dashboard", "scheduler.html"));
+  });
+
+  app.get("/whitelist", (_req, res) => {
+    res.sendFile(path.join(__dirname, "..", "dashboard", "whitelist.html"));
   });
 
   // Static files (CSS, JS, images, etc.)

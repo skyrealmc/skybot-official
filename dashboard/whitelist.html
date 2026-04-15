@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whitelist Management | Sky Bot Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Dashboard</h2>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="/" class="menu-item">Messages</a>
+                <a href="/templates" class="menu-item">Templates</a>
+                <a href="/scheduler" class="menu-item">Scheduler</a>
+                <a href="/analytics" class="menu-item">Analytics</a>
+                <a href="/whitelist" class="menu-item active">Whitelist</a>
+                <hr>
+                <a href="/auth/logout" class="menu-item danger">Logout</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Whitelist Management</h1>
+                    <p class="subtitle">Review and manage whitelist applications</p>
+                </div>
+                <div class="header-stats">
+                    <div class="stat">
+                        <span class="stat-label">Pending</span>
+                        <span class="stat-value" id="pendingCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Approved</span>
+                        <span class="stat-value" id="approvedCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Rejected</span>
+                        <span class="stat-value" id="rejectedCount">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="tab-btn active" data-filter="" id="allTab">All</button>
+                <button class="tab-btn" data-filter="pending" id="pendingTab">Pending</button>
+                <button class="tab-btn" data-filter="approved" id="approvedTab">Approved</button>
+                <button class="tab-btn" data-filter="rejected" id="rejectedTab">Rejected</button>
+            </div>
+
+            <!-- Applications Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Applications</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search by username or email..." class="search-input">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="applications-table">
+                        <thead>
+                            <tr>
+                                <th>Minecraft Username</th>
+                                <th>Discord ID</th>
+                                <th>Email</th>
+                                <th>Age</th>
+                                <th>Status</th>
+                                <th>Applied</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applicationsTableBody">
+                            <tr class="loading-row">
+                                <td colspan="7" class="text-center">Loading applications...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Approval Message Template -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Approval Embed Template</h2>
+                </div>
+                <div class="form-group">
+                    <label for="approvalMessage">Custom Approval Message</label>
+                    <textarea
+                        id="approvalMessage"
+                        class="form-control"
+                        rows="4"
+                        placeholder="Welcome to Sky Realms! You have been approved for the whitelist."
+                    ></textarea>
+                    <small>This message will be included in the approval notification embed.</small>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Application Details -->
+    <div id="applicationModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Application Details</h2>
+                <button class="modal-close" onclick="closeApplicationModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeApplicationModal()">Close</button>
+                <button class="btn btn-danger" id="rejectBtn" onclick="rejectApplication()">Reject</button>
+                <button class="btn btn-success" id="approveBtn" onclick="approveApplication()">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+            background: #0f0f1e;
+            color: #fff;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #1a1a2e;
+            padding: 20px;
+            border-right: 1px solid #333;
+        }
+
+        .sidebar-header h2 {
+            margin: 0 0 30px;
+            font-size: 18px;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .menu-item {
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: #bbb;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .menu-item:hover,
+        .menu-item.active {
+            background: #7B2FF7;
+            color: #fff;
+        }
+
+        .menu-item.danger:hover {
+            background: #dc3545;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            margin: 0 0 5px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            margin: 0;
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat {
+            background: #1a1a2e;
+            padding: 15px 25px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            display: block;
+            color: #aaa;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: #7B2FF7;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #7B2FF7;
+            border-bottom-color: #7B2FF7;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+        }
+
+        .card {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .search-box {
+            width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #0f0f1e;
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: #fff;
+        }
+
+        .search-input::placeholder {
+            color: #666;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .applications-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .applications-table thead {
+            background: #0f0f1e;
+        }
+
+        .applications-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #aaa;
+            font-size: 12px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #333;
+        }
+
+        .applications-table td {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        .applications-table tbody tr:hover {
+            background: rgba(123, 47, 247, 0.1);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-badge.approved {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .status-badge.rejected {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #7B2FF7;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #6a25d6;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #666;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #555;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            background: #0f0f1e;
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: #fff;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #7B2FF7;
+            box-shadow: 0 0 0 2px rgba(123, 47, 247, 0.2);
+        }
+
+        small {
+            display: block;
+            margin-top: 5px;
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid #333;
+        }
+
+        .loading-row {
+            text-align: center;
+            color: #aaa;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background: rgba(220, 53, 69, 0.1);
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            color: #28a745;
+            padding: 10px;
+            background: rgba(40, 167, 69, 0.1);
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #333;
+            }
+
+            .page-header {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .header-stats {
+                width: 100%;
+            }
+
+            .search-box {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .applications-table {
+                font-size: 12px;
+            }
+
+            .applications-table th,
+            .applications-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+
+    <script>
+        let currentApplicationId = null;
+        let currentFilter = '';
+
+        // Load applications on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadApplications();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Filter tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentFilter = e.target.dataset.filter;
+                    loadApplications();
+                });
+            });
+
+            // Search
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                filterTableRows(e.target.value);
+            });
+        }
+
+        async function loadApplications() {
+            try {
+                const url = currentFilter
+                    ? `/api/whitelist/list?status=${currentFilter}`
+                    : '/api/whitelist/list';
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to load applications');
+
+                const data = await response.json();
+                displayApplications(data.applications || []);
+                updateStats(data.applications || []);
+            } catch (error) {
+                console.error('Error loading applications:', error);
+                document.getElementById('applicationsTableBody').innerHTML =
+                    '<tr class="error-row"><td colspan="7" class="error">Failed to load applications</td></tr>';
+            }
+        }
+
+        function displayApplications(applications) {
+            const tbody = document.getElementById('applicationsTableBody');
+
+            if (applications.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 30px; color: #aaa;">No applications found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = applications.map(app => `
+                <tr>
+                    <td><strong>${escapeHtml(app.minecraftUsername)}</strong></td>
+                    <td><code>${app.discordId}</code></td>
+                    <td>${escapeHtml(app.email)}</td>
+                    <td>${app.age}</td>
+                    <td><span class="status-badge ${app.status}">${app.status}</span></td>
+                    <td><small>${new Date(app.createdAt).toLocaleDateString()}</small></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="viewApplication('${app._id}')">View</button>
+                            ${app.status === 'pending' ? `
+                                <button class="btn btn-success" onclick="openApproveModal('${app._id}')">Approve</button>
+                                <button class="btn btn-danger" onclick="quickReject('${app._id}')">Reject</button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats(applications) {
+            const stats = {
+                pending: 0,
+                approved: 0,
+                rejected: 0
+            };
+
+            applications.forEach(app => {
+                stats[app.status]++;
+            });
+
+            document.getElementById('pendingCount').textContent = stats.pending;
+            document.getElementById('approvedCount').textContent = stats.approved;
+            document.getElementById('rejectedCount').textContent = stats.rejected;
+        }
+
+        function filterTableRows(searchTerm) {
+            const rows = document.querySelectorAll('#applicationsTableBody tr');
+            const term = searchTerm.toLowerCase();
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        }
+
+        async function viewApplication(id) {
+            try {
+                const response = await fetch(`/api/whitelist/${id}`);
+                if (!response.ok) throw new Error('Failed to load application');
+
+                const data = await response.json();
+                const app = data.application;
+
+                currentApplicationId = id;
+                const modal = document.getElementById('applicationModal');
+                const modalBody = document.getElementById('modalBody');
+
+                modalBody.innerHTML = `
+                    <div style="line-height: 1.8;">
+                        <p><strong>Minecraft Username:</strong> ${escapeHtml(app.minecraftUsername)}</p>
+                        <p><strong>Discord ID:</strong> <code>${app.discordId}</code></p>
+                        <p><strong>Email:</strong> ${escapeHtml(app.email)}</p>
+                        <p><strong>Age:</strong> ${app.age}</p>
+                        <p><strong>Status:</strong> <span class="status-badge ${app.status}">${app.status}</span></p>
+                        <p><strong>Applied:</strong> ${new Date(app.createdAt).toLocaleString()}</p>
+                        ${app.status !== 'pending' ? `
+                            <p><strong>Reviewed By:</strong> ${escapeHtml(app.reviewedBy || 'N/A')}</p>
+                            <p><strong>Reviewed At:</strong> ${app.reviewedAt ? new Date(app.reviewedAt).toLocaleString() : 'N/A'}</p>
+                        ` : ''}
+                    </div>
+                `;
+
+                // Show/hide action buttons based on status
+                document.getElementById('approveBtn').style.display = app.status === 'pending' ? 'block' : 'none';
+                document.getElementById('rejectBtn').style.display = app.status === 'pending' ? 'block' : 'none';
+
+                modal.style.display = 'flex';
+            } catch (error) {
+                console.error('Error loading application:', error);
+                alert('Failed to load application details');
+            }
+        }
+
+        function openApproveModal(id) {
+            currentApplicationId = id;
+            const modal = document.getElementById('applicationModal');
+            const modalBody = document.getElementById('modalBody');
+
+            modalBody.innerHTML = `
+                <div>
+                    <p>Customize the approval message (optional):</p>
+                    <textarea id="customMessage" class="form-control" rows="4" placeholder="Leave blank to use default message"></textarea>
+                </div>
+            `;
+
+            document.getElementById('approveBtn').textContent = 'Confirm Approval';
+            document.getElementById('rejectBtn').style.display = 'none';
+            modal.style.display = 'flex';
+        }
+
+        async function approveApplication() {
+            if (!currentApplicationId) return;
+
+            try {
+                const customMessage = document.getElementById('customMessage')?.value || '';
+                const response = await fetch(`/api/whitelist/approve/${currentApplicationId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ approvalMessage: customMessage })
+                });
+
+                if (!response.ok) throw new Error('Failed to approve application');
+
+                alert('Application approved! Bot notification will be sent.');
+                closeApplicationModal();
+                loadApplications();
+            } catch (error) {
+                console.error('Error approving application:', error);
+                alert('Failed to approve application');
+            }
+        }
+
+        async function quickReject(id) {
+            if (!confirm('Are you sure you want to reject this application?')) return;
+
+            try {
+                const response = await fetch(`/api/whitelist/reject/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error('Failed to reject application');
+
+                alert('Application rejected');
+                loadApplications();
+            } catch (error) {
+                console.error('Error rejecting application:', error);
+                alert('Failed to reject application');
+            }
+        }
+
+        async function rejectApplication() {
+            if (!currentApplicationId) return;
+
+            if (!confirm('Are you sure you want to reject this application?')) return;
+
+            try {
+                const response = await fetch(`/api/whitelist/reject/${currentApplicationId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error('Failed to reject application');
+
+                alert('Application rejected');
+                closeApplicationModal();
+                loadApplications();
+            } catch (error) {
+                console.error('Error rejecting application:', error);
+                alert('Failed to reject application');
+            }
+        }
+
+        function closeApplicationModal() {
+            document.getElementById('applicationModal').style.display = 'none';
+            currentApplicationId = null;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('applicationModal');
+            if (e.target === modal) {
+                closeApplicationModal();
+            }
+        });
+    </script>
+</body>
+</html>

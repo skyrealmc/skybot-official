@@ -37,6 +37,13 @@ const {
   getGuildCommandConfig,
   updateGuildCommandConfig
 } = require("../controllers/guildConfigController");
+const {
+  submitApplication,
+  listApplications,
+  getApplication,
+  approveApplicationEndpoint,
+  rejectApplicationEndpoint
+} = require("../controllers/whitelistController");
 
 function createApiRouter({ client }) {
   const router = express.Router();
@@ -55,6 +62,12 @@ function createApiRouter({ client }) {
   const scheduleCreateLimiter = rateLimit({
     windowMs: 60 * 1000,
     limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false
+  });
+  const whitelistLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 5,
     standardHeaders: true,
     legacyHeaders: false
   });
@@ -101,6 +114,13 @@ function createApiRouter({ client }) {
     scheduleCreateLimiter,
     updateGuildCommandConfig({ client })
   );
+
+  // Whitelist routes
+  router.post("/whitelist/apply", whitelistLimiter, submitApplication);
+  router.get("/whitelist/list", requireAccountCapability("manage_settings"), listApplications);
+  router.get("/whitelist/:id", requireAccountCapability("manage_settings"), getApplication);
+  router.post("/whitelist/approve/:id", requireAccountCapability("manage_settings"), approveApplicationEndpoint);
+  router.post("/whitelist/reject/:id", requireAccountCapability("manage_settings"), rejectApplicationEndpoint);
 
   return router;
 }
