@@ -794,6 +794,7 @@
     <script>
         let currentApplicationId = null;
         let currentFilter = '';
+        let lastSelectedGuild = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadApplications();
@@ -972,6 +973,7 @@
 
             try {
                 const guildId = document.getElementById('embedGuildSelect').value;
+                lastSelectedGuild = guildId;
                 const response = await fetch(`/api/whitelist/approve/${currentApplicationId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -998,6 +1000,7 @@
 
             try {
                 const guildId = document.getElementById('embedGuildSelectRejected').value;
+                lastSelectedGuild = guildId;
                 const response = await fetch(`/api/whitelist/reject/${currentApplicationId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1044,10 +1047,10 @@
                 return;
             }
 
-            const notificationGuildId = document.getElementById('notificationGuildId')?.value;
+            const notificationGuildId = lastSelectedGuild;
 
             if (!notificationGuildId) {
-                alert('Please select a guild to send the notification to');
+                alert('Please approve or reject the application first to set a guild, or select a guild in the customizer');
                 return;
             }
 
@@ -1155,8 +1158,11 @@
                 }
             });
 
-            // Load channels when guild changes
-            document.getElementById('embedGuildSelect').addEventListener('change', loadChannels);
+            // Load channels when guild changes and store selection
+            document.getElementById('embedGuildSelect').addEventListener('change', () => {
+                lastSelectedGuild = document.getElementById('embedGuildSelect').value;
+                loadChannels();
+            });
         }
 
         function setupEmbedListenersRejected() {
@@ -1182,8 +1188,11 @@
                 }
             });
 
-            // Load channels when guild changes
-            document.getElementById('embedGuildSelectRejected').addEventListener('change', loadChannelsRejected);
+            // Load channels when guild changes and store selection
+            document.getElementById('embedGuildSelectRejected').addEventListener('change', () => {
+                lastSelectedGuild = document.getElementById('embedGuildSelectRejected').value;
+                loadChannelsRejected();
+            });
         }
 
         async function loadGuilds() {
