@@ -73,6 +73,11 @@ function createApiRouter({ client }) {
   });
 
   router.use(globalLimiter);
+
+  // Whitelist apply endpoint - PUBLIC (no auth required)
+  router.post("/whitelist/apply", whitelistLimiter, submitApplication);
+
+  // All other routes require authentication
   router.use(requireAuth);
 
   router.get("/guilds", getGuilds({ client }));
@@ -115,8 +120,7 @@ function createApiRouter({ client }) {
     updateGuildCommandConfig({ client })
   );
 
-  // Whitelist routes
-  router.post("/whitelist/apply", whitelistLimiter, submitApplication);
+  // Whitelist admin routes (require auth)
   router.get("/whitelist/list", requireAccountCapability("manage_settings"), listApplications);
   router.get("/whitelist/:id", requireAccountCapability("manage_settings"), getApplication);
   router.post("/whitelist/approve/:id", requireAccountCapability("manage_settings"), approveApplicationEndpoint);
