@@ -104,8 +104,8 @@ function initWhitelistForm() {
             return;
         }
 
-        if (!discordUsername) {
-            showWhitelistMessage(message, 'Enter a valid Discord ID.', 'error');
+        if (!discordUsername || !isValidDiscordId(discordUsername)) {
+            showWhitelistMessage(message, 'Enter a valid Discord ID (17-19 digits). You can find your ID by enabling Developer Mode in Discord settings and right-clicking your profile.', 'error');
             return;
         }
 
