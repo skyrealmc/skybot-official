@@ -33,7 +33,9 @@ function saveApplications(applications) {
     localStorage.setItem(WHITELIST_STORAGE_KEY, JSON.stringify(applications));
 }
 
-async function submitToBackend(minecraftUsername, discordUsername, email, age) {
+async function submitToBackend(minecraftUsername, discordUsername, email, age, retryCount = 0) {
+    const maxRetries = 2;
+    
     try {
         const response = await fetch(API_ENDPOINT, {
             method: 'POST',
@@ -56,6 +58,18 @@ async function submitToBackend(minecraftUsername, discordUsername, email, age) {
 
         return { success: true, data };
     } catch (error) {
+        // If it's a network error and we haven't exhausted retries, retry
+        if ((error instanceof TypeError || error.message.includes('fetch')) && retryCount < maxRetries) {
+            // Wait a bit before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return submitToBackend(minecraftUsername, discordUsername, email, age, retryCount + 1);
+        }
+        
+        // Add context to fetch errors
+        if (error instanceof TypeError || error.message.includes('fetch')) {
+            error.isNetworkError = true;
+        }
+        
         throw error;
     }
 }
@@ -153,13 +167,19 @@ function initWhitelistForm() {
         } catch (error) {
             let errorMessage = error.message || 'Failed to submit application. Please try again.';
             
-            if (error.message.includes('duplicate')) {
+            // Handle specific error types
+            if (error.isNetworkError || error.message.includes('Failed to fetch')) {
+                errorMessage = 'Network error: Could not connect to the server. Please check your internet connection and try again. If the problem persists, contact staff in Discord.';
+            } else if (error.message.includes('duplicate')) {
                 errorMessage = 'You have already submitted an application. Please wait for staff review.';
             } else if (error.message.includes('closed')) {
                 errorMessage = 'Whitelist applications are currently closed.';
+            } else if (error.message.includes('Invalid')) {
+                errorMessage = `Validation error: ${error.message}`;
             }
 
             showWhitelistMessage(message, errorMessage, 'error');
+            console.error('Application submission error:', error);
         } finally {
             applyButton.disabled = !applicationsOpen;
         }
