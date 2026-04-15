@@ -66,7 +66,7 @@ async function approveApplicationEndpoint(req, res) {
   try {
     const { id } = req.params;
     const { approvalMessage, notificationChannelId, notificationGuildId, assignRoleId } = req.body;
-    const adminId = req.session.user?.discordId;
+    const adminId = req.session.user?.id;
     const client = req.app.locals.discordClient;
 
     if (!adminId) {
@@ -109,7 +109,7 @@ async function approveApplicationEndpoint(req, res) {
 async function rejectApplicationEndpoint(req, res) {
   try {
     const { id } = req.params;
-    const adminId = req.session.user?.discordId;
+    const adminId = req.session.user?.id;
 
     if (!adminId) {
       return res.status(401).json({ error: "Authentication required" });
