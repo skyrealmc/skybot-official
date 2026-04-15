@@ -6,7 +6,10 @@ const {
   rejectApplication,
   deleteApplication
 } = require("../services/whitelistService");
-const { sendWhitelistApproved } = require("../services/whitelistNotificationService");
+const {
+  sendWhitelistApproved,
+  sendWhitelistRejected
+} = require("../services/whitelistNotificationService");
 const {
   getWhitelistConfig,
   saveWhitelistConfig
@@ -124,7 +127,9 @@ async function approveApplicationEndpoint(req, res) {
 async function rejectApplicationEndpoint(req, res) {
   try {
     const { id } = req.params;
+    const { notificationGuildId } = req.body;
     const adminId = req.session.user?.id;
+    const client = req.app.locals.discordClient;
 
     if (!adminId) {
       return res.status(401).json({ error: "Authentication required" });
@@ -132,10 +137,34 @@ async function rejectApplicationEndpoint(req, res) {
 
     const application = await rejectApplication(id, adminId);
 
+    // Auto-send Discord rejection notification using saved config
+    let notificationSent = false;
+    if (client && notificationGuildId) {
+      try {
+        const config = await getWhitelistConfig(notificationGuildId);
+
+        if (config && config.channelId) {
+          const notificationSuccess = await sendWhitelistRejected(client, application, {
+            channelId: config.channelId,
+            guildId: notificationGuildId,
+            embedTemplate: config.rejectionTemplate
+          });
+
+          notificationSent = notificationSuccess;
+          if (!notificationSuccess) {
+            logger.warn(`Rejection notification failed for application ${id}, but rejection was recorded`);
+          }
+        }
+      } catch (configError) {
+        logger.warn(`Could not load config for guild ${notificationGuildId}:`, configError.message);
+      }
+    }
+
     res.json({
       success: true,
-      message: "Application rejected",
-      application
+      message: "Application rejected successfully",
+      application,
+      notificationSent
     });
   } catch (error) {
     if (error.status) {
@@ -221,11 +250,13 @@ async function getWhitelistConfigEndpoint(req, res) {
 
 // POST /api/whitelist/config/:guildId
 // Save whitelist embed config for a guild
+// POST /api/whitelist/config/:guildId
+// Admin endpoint - save whitelist config (approval and rejection templates)
 async function saveWhitelistConfigEndpoint(req, res) {
   try {
     const { guildId } = req.params;
     const adminId = req.session.user?.id;
-    const { channelId, embedTemplate, roleId } = req.body;
+    const { channelId, embedTemplate, rejectionTemplate, roleId } = req.body;
 
     if (!adminId) {
       return res.status(401).json({ error: "Authentication required" });
@@ -235,11 +266,20 @@ async function saveWhitelistConfigEndpoint(req, res) {
       return res.status(400).json({ error: "Channel ID is required" });
     }
 
-    const config = await saveWhitelistConfig(guildId, adminId, {
+    const configData = {
       channelId,
-      embedTemplate,
       roleId
-    });
+    };
+
+    if (embedTemplate) {
+      configData.embedTemplate = embedTemplate;
+    }
+
+    if (rejectionTemplate) {
+      configData.rejectionTemplate = rejectionTemplate;
+    }
+
+    const config = await saveWhitelistConfig(guildId, adminId, configData);
 
     res.json({
       success: true,

@@ -569,87 +569,202 @@
                 <div class="whitelist-card" style="margin-top: 32px;">
                     <div class="whitelist-card-header">
                         <h2 class="whitelist-card-title">Embed Customizer</h2>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">Customize approval notification embed and select target Discord channel</p>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">Customize approval and rejection notification embeds and select target Discord channel</p>
+                    </div>
+
+                    <!-- Template Type Tabs -->
+                    <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+                        <div style="display: flex; gap: 12px;">
+                            <button id="approvedTabBtn" class="tab-btn active" onclick="switchTemplateTab('approved')" style="
+                                padding: 8px 16px;
+                                border: none;
+                                background: transparent;
+                                color: var(--text-secondary);
+                                cursor: pointer;
+                                font-weight: 500;
+                                border-bottom: 2px solid transparent;
+                                transition: all 0.2s;
+                            ">
+                                ✅ Approved
+                            </button>
+                            <button id="rejectedTabBtn" class="tab-btn" onclick="switchTemplateTab('rejected')" style="
+                                padding: 8px 16px;
+                                border: none;
+                                background: transparent;
+                                color: var(--text-secondary);
+                                cursor: pointer;
+                                font-weight: 500;
+                                border-bottom: 2px solid transparent;
+                                transition: all 0.2s;
+                            ">
+                                ❌ Rejected
+                            </button>
+                        </div>
                     </div>
 
                     <div style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                        <!-- Left: Settings Form -->
-                        <div>
-                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Discord Channel Selection</h3>
-                            
-                            <label style="display: block; margin-bottom: 16px;">
-                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Server</span>
-                                <select id="embedGuildSelect" class="form-control" style="width: 100%;">
-                                    <option value="">Select a server...</option>
-                                </select>
-                            </label>
+                        <!-- Template content wrapper -->
+                        <div id="approvedTemplateContent">
+                            <!-- Left: Settings Form -->
+                            <div>
+                                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Discord Channel Selection</h3>
+                                
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Server</span>
+                                    <select id="embedGuildSelect" class="form-control" style="width: 100%;">
+                                        <option value="">Select a server...</option>
+                                    </select>
+                                </label>
 
-                            <label style="display: block; margin-bottom: 24px;">
-                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Channel</span>
-                                <select id="embedChannelSelect" class="form-control" style="width: 100%;">
-                                    <option value="">Select a channel...</option>
-                                </select>
-                            </label>
+                                <label style="display: block; margin-bottom: 24px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Channel</span>
+                                    <select id="embedChannelSelect" class="form-control" style="width: 100%;">
+                                        <option value="">Select a channel...</option>
+                                    </select>
+                                </label>
 
-                            <hr style="border: 1px solid var(--border); margin-bottom: 24px;">
+                                <hr style="border: 1px solid var(--border); margin-bottom: 24px;">
 
-                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Embed Template</h3>
+                                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Embed Template</h3>
 
-                            <label style="display: block; margin-bottom: 16px;">
-                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Title</span>
-                                <input type="text" id="embedTitle" class="form-control" placeholder="✅ Whitelist Application Approved" value="✅ Whitelist Application Approved" style="width: 100%;">
-                            </label>
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Title</span>
+                                    <input type="text" id="embedTitle" class="form-control" placeholder="✅ Whitelist Application Approved" value="✅ Whitelist Application Approved" style="width: 100%;">
+                                </label>
 
-                            <label style="display: block; margin-bottom: 16px;">
-                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Description</span>
-                                <textarea id="embedDescription" class="form-control" rows="4" placeholder="Welcome message..." style="width: 100%;">Welcome to Sky Realms SMP! Your whitelist application has been approved.</textarea>
-                            </label>
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Description</span>
+                                    <textarea id="embedDescription" class="form-control" rows="4" placeholder="Welcome message..." style="width: 100%;">Welcome to Sky Realms SMP! Your whitelist application has been approved.</textarea>
+                                </label>
 
-                            <label style="display: block; margin-bottom: 16px;">
-                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Color</span>
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Color</span>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="color" id="embedColor" class="form-control" value="#28a745" style="width: 60px; padding: 4px;">
+                                        <input type="text" id="embedColorHex" class="form-control" value="#28a745" placeholder="#28a745" style="flex: 1;">
+                                    </div>
+                                </label>
+
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Footer</span>
+                                    <input type="text" id="embedFooter" class="form-control" placeholder="Sky Realms SMP" value="Sky Realms SMP" style="width: 100%;">
+                                </label>
+
+                                <label style="display: block; margin-bottom: 24px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Author</span>
+                                    <input type="text" id="embedAuthor" class="form-control" placeholder="Whitelist System" value="Whitelist System" style="width: 100%;">
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+                                    <input type="checkbox" id="embedTimestamp" checked style="cursor: pointer;">
+                                    <span style="font-size: 0.9rem; color: var(--text-primary);">Include timestamp</span>
+                                </label>
+
                                 <div style="display: flex; gap: 8px;">
-                                    <input type="color" id="embedColor" class="form-control" value="#28a745" style="width: 60px; padding: 4px;">
-                                    <input type="text" id="embedColorHex" class="form-control" value="#28a745" placeholder="#28a745" style="flex: 1;">
+                                    <button onclick="saveEmbedTemplate('approved')" class="btn btn-primary" style="flex: 1;">Save Template</button>
+                                    <button onclick="testEmbedMessage('approved')" class="btn btn-secondary" style="flex: 1;">Test Send</button>
                                 </div>
-                            </label>
+                            </div>
 
-                            <label style="display: block; margin-bottom: 16px;">
-                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Footer</span>
-                                <input type="text" id="embedFooter" class="form-control" placeholder="Sky Realms SMP" value="Sky Realms SMP" style="width: 100%;">
-                            </label>
-
-                            <label style="display: block; margin-bottom: 24px;">
-                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Author</span>
-                                <input type="text" id="embedAuthor" class="form-control" placeholder="Whitelist System" value="Whitelist System" style="width: 100%;">
-                            </label>
-
-                            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
-                                <input type="checkbox" id="embedTimestamp" checked style="cursor: pointer;">
-                                <span style="font-size: 0.9rem; color: var(--text-primary);">Include timestamp</span>
-                            </label>
-
-                            <div style="display: flex; gap: 8px;">
-                                <button onclick="saveEmbedTemplate()" class="btn btn-primary" style="flex: 1;">Save Template</button>
-                                <button onclick="testEmbedMessage()" class="btn btn-secondary" style="flex: 1;">Test Send</button>
+                            <!-- Right: Preview -->
+                            <div>
+                                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Preview</h3>
+                                <div id="embedPreview" style="
+                                    background: var(--bg-tertiary);
+                                    border: 1px solid var(--border);
+                                    border-radius: var(--radius-lg);
+                                    padding: 16px;
+                                    min-height: 300px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: var(--text-secondary);
+                                    font-size: 0.9rem;
+                                ">
+                                    <span>Preview will appear here</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Right: Preview -->
-                        <div>
-                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Preview</h3>
-                            <div id="embedPreview" style="
-                                background: var(--bg-tertiary);
-                                border: 1px solid var(--border);
-                                border-radius: var(--radius-lg);
-                                padding: 16px;
-                                min-height: 300px;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                color: var(--text-secondary);
-                                font-size: 0.9rem;
-                            ">
-                                <span>Preview will appear here</span>
+                        <div id="rejectedTemplateContent" style="display: none;">
+                            <!-- Left: Settings Form -->
+                            <div>
+                                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Discord Channel Selection</h3>
+                                
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Server</span>
+                                    <select id="embedGuildSelectRejected" class="form-control" style="width: 100%;">
+                                        <option value="">Select a server...</option>
+                                    </select>
+                                </label>
+
+                                <label style="display: block; margin-bottom: 24px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Channel</span>
+                                    <select id="embedChannelSelectRejected" class="form-control" style="width: 100%;">
+                                        <option value="">Select a channel...</option>
+                                    </select>
+                                </label>
+
+                                <hr style="border: 1px solid var(--border); margin-bottom: 24px;">
+
+                                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Embed Template</h3>
+
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Title</span>
+                                    <input type="text" id="embedTitleRejected" class="form-control" placeholder="❌ Whitelist Application Rejected" value="❌ Whitelist Application Rejected" style="width: 100%;">
+                                </label>
+
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Description</span>
+                                    <textarea id="embedDescriptionRejected" class="form-control" rows="4" placeholder="Rejection message..." style="width: 100%;">Unfortunately, your whitelist application has been rejected. Please try again later.</textarea>
+                                </label>
+
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Color</span>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="color" id="embedColorRejected" class="form-control" value="#dc3545" style="width: 60px; padding: 4px;">
+                                        <input type="text" id="embedColorHexRejected" class="form-control" value="#dc3545" placeholder="#dc3545" style="flex: 1;">
+                                    </div>
+                                </label>
+
+                                <label style="display: block; margin-bottom: 16px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Footer</span>
+                                    <input type="text" id="embedFooterRejected" class="form-control" placeholder="Sky Realms SMP" value="Sky Realms SMP" style="width: 100%;">
+                                </label>
+
+                                <label style="display: block; margin-bottom: 24px;">
+                                    <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Author</span>
+                                    <input type="text" id="embedAuthorRejected" class="form-control" placeholder="Whitelist System" value="Whitelist System" style="width: 100%;">
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+                                    <input type="checkbox" id="embedTimestampRejected" checked style="cursor: pointer;">
+                                    <span style="font-size: 0.9rem; color: var(--text-primary);">Include timestamp</span>
+                                </label>
+
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="saveEmbedTemplate('rejected')" class="btn btn-primary" style="flex: 1;">Save Template</button>
+                                    <button onclick="testEmbedMessage('rejected')" class="btn btn-secondary" style="flex: 1;">Test Send</button>
+                                </div>
+                            </div>
+
+                            <!-- Right: Preview -->
+                            <div>
+                                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Preview</h3>
+                                <div id="embedPreviewRejected" style="
+                                    background: var(--bg-tertiary);
+                                    border: 1px solid var(--border);
+                                    border-radius: var(--radius-lg);
+                                    padding: 16px;
+                                    min-height: 300px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: var(--text-secondary);
+                                    font-size: 0.9rem;
+                                ">
+                                    <span>Preview will appear here</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -875,18 +990,23 @@
         }
 
         async function rejectApplication() {
-            if (!currentApplicationId || !confirm('Reject this application?')) return;
+            if (!currentApplicationId) return;
+
+            if (!confirm('Reject this application?')) return;
 
             try {
+                const guildId = document.getElementById('embedGuildSelectRejected').value;
                 const response = await fetch(`/api/whitelist/reject/${currentApplicationId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
+                    credentials: 'include',
+                    body: JSON.stringify({ notificationGuildId: guildId })
                 });
 
                 if (!response.ok) throw new Error('Failed to reject');
 
-                alert('Application rejected');
+                const data = await response.json();
+                alert(data.notificationSent ? 'Application rejected and notification sent' : 'Application rejected');
                 closeApplicationModal();
                 loadApplications();
             } catch (error) {
@@ -935,11 +1055,43 @@
 
         // ============= EMBED CUSTOMIZER FUNCTIONS =============
 
+        let currentTemplateType = 'approved';
+
+        function switchTemplateTab(type) {
+            currentTemplateType = type;
+            const approvedBtn = document.getElementById('approvedTabBtn');
+            const rejectedBtn = document.getElementById('rejectedTabBtn');
+            const approvedContent = document.getElementById('approvedTemplateContent');
+            const rejectedContent = document.getElementById('rejectedTemplateContent');
+
+            if (type === 'approved') {
+                approvedBtn.style.borderBottomColor = 'var(--text-primary)';
+                approvedBtn.style.color = 'var(--text-primary)';
+                rejectedBtn.style.borderBottomColor = 'transparent';
+                rejectedBtn.style.color = 'var(--text-secondary)';
+                approvedContent.style.display = 'grid';
+                rejectedContent.style.display = 'none';
+                updateEmbedPreview();
+            } else {
+                approvedBtn.style.borderBottomColor = 'transparent';
+                approvedBtn.style.color = 'var(--text-secondary)';
+                rejectedBtn.style.borderBottomColor = 'var(--text-primary)';
+                rejectedBtn.style.color = 'var(--text-primary)';
+                approvedContent.style.display = 'none';
+                rejectedContent.style.display = 'grid';
+                updateEmbedPreviewRejected();
+            }
+        }
+
         async function initializeEmbedCustomizer() {
             await loadGuilds();
+            await loadGuildsRejected();
             await loadEmbedTemplate();
+            await loadEmbedTemplateRejected();
             setupEmbedListeners();
+            setupEmbedListenersRejected();
             updateEmbedPreview();
+            updateEmbedPreviewRejected();
         }
 
         function setupEmbedListeners() {
@@ -969,12 +1121,62 @@
             document.getElementById('embedGuildSelect').addEventListener('change', loadChannels);
         }
 
+        function setupEmbedListenersRejected() {
+            // Update color hex when color picker changes
+            document.getElementById('embedColorRejected').addEventListener('change', (e) => {
+                document.getElementById('embedColorHexRejected').value = e.target.value;
+                updateEmbedPreviewRejected();
+            });
+
+            document.getElementById('embedColorHexRejected').addEventListener('input', (e) => {
+                if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                    document.getElementById('embedColorRejected').value = e.target.value;
+                    updateEmbedPreviewRejected();
+                }
+            });
+
+            // Update preview when any embed field changes
+            ['embedTitleRejected', 'embedDescriptionRejected', 'embedColorRejected', 'embedFooterRejected', 'embedAuthorRejected', 'embedTimestampRejected'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const eventType = element.type === 'checkbox' ? 'change' : 'input';
+                    element.addEventListener(eventType, updateEmbedPreviewRejected);
+                }
+            });
+
+            // Load channels when guild changes
+            document.getElementById('embedGuildSelectRejected').addEventListener('change', loadChannelsRejected);
+        }
+
         async function loadGuilds() {
             try {
                 const response = await fetch('/api/guilds', { credentials: 'include' });
                 const guilds = await response.json();
 
                 const select = document.getElementById('embedGuildSelect');
+                select.innerHTML = '<option value="">Select a server...</option>';
+                
+                if (Array.isArray(guilds) && guilds.length > 0) {
+                    guilds.forEach(guild => {
+                        if (guild.botPresent) {
+                            const option = document.createElement('option');
+                            option.value = guild.id;
+                            option.textContent = guild.name;
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading guilds:', error);
+            }
+        }
+
+        async function loadGuildsRejected() {
+            try {
+                const response = await fetch('/api/guilds', { credentials: 'include' });
+                const guilds = await response.json();
+
+                const select = document.getElementById('embedGuildSelectRejected');
                 select.innerHTML = '<option value="">Select a server...</option>';
                 
                 if (Array.isArray(guilds) && guilds.length > 0) {
@@ -1019,6 +1221,33 @@
             }
         }
 
+        async function loadChannelsRejected() {
+            const guildId = document.getElementById('embedGuildSelectRejected').value;
+            if (!guildId) {
+                document.getElementById('embedChannelSelectRejected').innerHTML = '<option value="">Select a channel...</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/channels/${guildId}`, { credentials: 'include' });
+                const channels = await response.json();
+
+                const select = document.getElementById('embedChannelSelectRejected');
+                select.innerHTML = '<option value="">Select a channel...</option>';
+
+                if (Array.isArray(channels)) {
+                    channels.forEach(channel => {
+                        const option = document.createElement('option');
+                        option.value = channel.id;
+                        option.textContent = `# ${channel.name}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading channels:', error);
+            }
+        }
+
         async function loadEmbedTemplate() {
             const guildId = document.getElementById('embedGuildSelect').value;
             if (!guildId) return;
@@ -1048,7 +1277,34 @@
             }
         }
 
-        function updateEmbedPreview() {
+        async function loadEmbedTemplateRejected() {
+            const guildId = document.getElementById('embedGuildSelectRejected').value;
+            if (!guildId) return;
+
+            try {
+                const response = await fetch(`/api/whitelist/config/${guildId}`, { credentials: 'include' });
+                const data = await response.json();
+
+                if (data.config && data.config.rejectionTemplate) {
+                    const template = data.config.rejectionTemplate;
+                    document.getElementById('embedTitleRejected').value = template.title || '';
+                    document.getElementById('embedDescriptionRejected').value = template.description || '';
+                    document.getElementById('embedColorRejected').value = template.color || '#dc3545';
+                    document.getElementById('embedColorHexRejected').value = template.color || '#dc3545';
+                    document.getElementById('embedFooterRejected').value = template.footer || '';
+                    document.getElementById('embedAuthorRejected').value = template.author || '';
+                    document.getElementById('embedTimestampRejected').checked = template.includeTimestamp !== false;
+
+                    if (data.config.channelId) {
+                        document.getElementById('embedChannelSelectRejected').value = data.config.channelId;
+                    }
+                }
+
+                updateEmbedPreviewRejected();
+            } catch (error) {
+                console.error('Error loading embed template:', error);
+            }
+        }
             const previewElement = document.getElementById('embedPreview');
             if (!previewElement) return;
             
@@ -1099,7 +1355,109 @@
             previewElement.innerHTML = previewHTML;
         }
 
-        async function saveEmbedTemplate() {
+        function updateEmbedPreviewRejected() {
+            const previewElement = document.getElementById('embedPreviewRejected');
+            if (!previewElement) return;
+            
+            const title = document.getElementById('embedTitleRejected')?.value || '❌ Whitelist Application Rejected';
+            const description = document.getElementById('embedDescriptionRejected')?.value || 'Unfortunately, your whitelist application has been rejected.';
+            const color = document.getElementById('embedColorRejected')?.value || '#dc3545';
+            const footer = document.getElementById('embedFooterRejected')?.value || 'Sky Realms SMP';
+            const author = document.getElementById('embedAuthorRejected')?.value || 'Whitelist System';
+            const timestamp = document.getElementById('embedTimestampRejected')?.checked ?? true;
+
+            const previewHTML = `
+                <div style="
+                    background: var(--bg-secondary);
+                    border-left: 4px solid ${color};
+                    border-radius: var(--radius-md);
+                    padding: 12px;
+                    width: 100%;
+                ">
+                    ${author ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px;">${escapeHtml(author)}</div>` : ''}
+                    <div style="font-weight: 600; font-size: 1rem; color: var(--text-primary); margin-bottom: 8px;">${escapeHtml(title)}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px; line-height: 1.4;">${escapeHtml(description).replace(/\n/g, '<br>')}</div>
+                    <div style="
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 12px;
+                        margin-bottom: 12px;
+                        padding-bottom: 12px;
+                        border-bottom: 1px solid var(--border);
+                    ">
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Minecraft Username</div>
+                            <div style="color: var(--text-primary); font-family: monospace;">chris3656</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Discord</div>
+                            <div style="color: var(--text-primary);">@sample_user</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Rejected</div>
+                            <div style="color: var(--text-primary);">${new Date().toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    ${footer ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(footer)}</div>` : ''}
+                    ${timestamp ? `<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">Today at ${new Date().toLocaleTimeString()}</div>` : ''}
+                </div>
+            `;
+
+            previewElement.innerHTML = previewHTML;
+        }
+            const isApproved = type === 'approved';
+            const guildId = isApproved ? 
+                document.getElementById('embedGuildSelect').value : 
+                document.getElementById('embedGuildSelectRejected').value;
+            const channelId = isApproved ?
+                document.getElementById('embedChannelSelect').value :
+                document.getElementById('embedChannelSelectRejected').value;
+
+            if (!guildId || !channelId) {
+                alert('Please select both server and channel');
+                return;
+            }
+
+            try {
+                const embedTemplate = isApproved ? {
+                    title: document.getElementById('embedTitle').value,
+                    description: document.getElementById('embedDescription').value,
+                    color: document.getElementById('embedColor').value,
+                    footer: document.getElementById('embedFooter').value,
+                    author: document.getElementById('embedAuthor').value,
+                    includeTimestamp: document.getElementById('embedTimestamp').checked
+                } : {
+                    title: document.getElementById('embedTitleRejected').value,
+                    description: document.getElementById('embedDescriptionRejected').value,
+                    color: document.getElementById('embedColorRejected').value,
+                    footer: document.getElementById('embedFooterRejected').value,
+                    author: document.getElementById('embedAuthorRejected').value,
+                    includeTimestamp: document.getElementById('embedTimestampRejected').checked
+                };
+
+                const payload = isApproved ? {
+                    channelId,
+                    embedTemplate
+                } : {
+                    channelId,
+                    rejectionTemplate: embedTemplate
+                };
+
+                const response = await fetch(`/api/whitelist/config/${guildId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Failed to save');
+
+                alert(isApproved ? 'Approved template saved!' : 'Rejection template saved!');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to save template');
+            }
+        }
             const guildId = document.getElementById('embedGuildSelect').value;
             const channelId = document.getElementById('embedChannelSelect').value;
 
@@ -1134,9 +1492,14 @@
             }
         }
 
-        async function testEmbedMessage() {
-            const guildId = document.getElementById('embedGuildSelect').value;
-            const channelId = document.getElementById('embedChannelSelect').value;
+        async function testEmbedMessage(type = 'approved') {
+            const isApproved = type === 'approved';
+            const guildId = isApproved ? 
+                document.getElementById('embedGuildSelect').value : 
+                document.getElementById('embedGuildSelectRejected').value;
+            const channelId = isApproved ?
+                document.getElementById('embedChannelSelect').value :
+                document.getElementById('embedChannelSelectRejected').value;
 
             if (!guildId || !channelId) {
                 alert('Please select both a server and channel');
@@ -1144,8 +1507,7 @@
             }
 
             try {
-                // For testing, send a sample approved message
-                alert('✅ Test message would be sent to the selected channel. Save the template first to enable actual sending.');
+                alert(`✅ Test ${isApproved ? 'approved' : 'rejection'} message would be sent to the selected channel. Save the template first to enable actual sending.`);
             } catch (error) {
                 console.error('Error sending test:', error);
                 alert('Failed to send test message');

@@ -43,6 +43,32 @@ const whitelistConfigSchema = new mongoose.Schema(
         default: true
       }
     },
+    rejectionTemplate: {
+      title: {
+        type: String,
+        default: "❌ Whitelist Application Rejected"
+      },
+      description: {
+        type: String,
+        default: "Unfortunately, your whitelist application has been rejected. Please try again later."
+      },
+      color: {
+        type: String,
+        default: "#dc3545"
+      },
+      footer: {
+        type: String,
+        default: "Sky Realms SMP"
+      },
+      author: {
+        type: String,
+        default: "Whitelist System"
+      },
+      includeTimestamp: {
+        type: Boolean,
+        default: true
+      }
+    },
     roleId: {
       type: String,
       description: "Optional: Role ID to assign to approved user"

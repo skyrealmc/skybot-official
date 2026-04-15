@@ -167,9 +167,54 @@ async function sendWhitelistApprovedBatch(client, applications, options = {}) {
   return results;
 }
 
+/**
+ * Send a whitelist rejection notification to Discord
+ * @param {Object} client - Discord bot client
+ * @param {Object} application - WhitelistApplication document
+ * @param {Object} options - { channelId, guildId, embedTemplate }
+ * @returns {boolean} Success status
+ */
+async function sendWhitelistRejected(client, application, options = {}) {
+  try {
+    const { channelId, embedTemplate } = options;
+
+    if (!client || !channelId) {
+      logger.warn("Missing Discord client or channel ID for rejection notification");
+      return false;
+    }
+
+    const channel = await client.channels.fetch(channelId);
+    if (!channel || !channel.isDMBased() && !channel.isTextBased()) {
+      logger.warn(`Invalid channel for rejection notification: ${channelId}`);
+      return false;
+    }
+
+    const customizedEmbed = customizeEmbedTemplate(embedTemplate, application);
+    if (!customizedEmbed) {
+      logger.warn("Failed to customize rejection embed template");
+      return false;
+    }
+
+    const embed = buildCustomizedEmbed(customizedEmbed);
+    const mention = `<@${application.discordId}>`;
+
+    await channel.send({
+      content: mention,
+      embeds: [embed]
+    });
+
+    logger.info(`Rejection notification sent for application ${application._id}`);
+    return true;
+  } catch (error) {
+    logger.error("Error sending whitelist rejection notification:", error);
+    return false;
+  }
+}
+
 module.exports = {
   sendWhitelistApproved,
   sendWhitelistApprovedBatch,
+  sendWhitelistRejected,
   customizeEmbedTemplate,
   buildCustomizedEmbed
 };
