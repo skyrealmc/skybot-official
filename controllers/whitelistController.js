@@ -117,9 +117,6 @@ async function approveApplicationEndpoint(req, res) {
     res.status(500).json({ error: "Failed to approve application" });
   }
 }
-    res.status(500).json({ error: "Failed to approve application" });
-  }
-}
 
 // POST /api/whitelist/reject/:id
 // Admin endpoint - reject an application
