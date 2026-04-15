@@ -785,6 +785,7 @@
                 <button class="btn btn-secondary" onclick="closeApplicationModal()">Close</button>
                 <button class="btn btn-danger" id="rejectBtn" onclick="rejectApplication()" style="display:none;">Reject</button>
                 <button class="btn btn-success" id="approveBtn" onclick="approveApplication()" style="display:none;">Approve</button>
+                <button class="btn btn-info" id="resendBtn" onclick="resendWhitelistNotification()" style="display:none;">Resend Notification</button>
                 <button class="btn btn-danger" id="deleteBtn" onclick="deleteApplication()" style="display:none; background-color: #dc3545; border-color: #dc3545;">Delete</button>
             </div>
         </div>
@@ -940,6 +941,7 @@
 
                 document.getElementById('approveBtn').style.display = app.status === 'pending' ? 'block' : 'none';
                 document.getElementById('rejectBtn').style.display = app.status === 'pending' ? 'block' : 'none';
+                document.getElementById('resendBtn').style.display = app.status === 'approved' ? 'block' : 'none';
                 document.getElementById('deleteBtn').style.display = app.status === 'approved' ? 'block' : 'none';
                 modal.classList.add('active');
             } catch (error) {
@@ -1033,6 +1035,42 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('Failed to delete application');
+            }
+        }
+
+        async function resendWhitelistNotification() {
+            if (!currentApplicationId) {
+                alert('No application selected');
+                return;
+            }
+
+            const notificationGuildId = document.getElementById('notificationGuildId')?.value;
+
+            if (!notificationGuildId) {
+                alert('Please select a guild to send the notification to');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/whitelist/${currentApplicationId}/resend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notificationGuildId }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to resend notification');
+                }
+
+                alert('Notification resent successfully!');
+                closeApplicationModal();
+                loadApplications();
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to resend notification: ${error.message}`);
             }
         }
 

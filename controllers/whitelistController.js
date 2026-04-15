@@ -201,6 +201,72 @@ async function deleteApplicationEndpoint(req, res) {
   }
 }
 
+// POST /api/whitelist/:id/resend
+// Admin endpoint - resend notification for an approved application
+async function resendApplicationNotification(req, res) {
+  try {
+    const { id } = req.params;
+    const { notificationGuildId } = req.body;
+    const adminId = req.session.user?.id;
+    const client = req.app.locals.discordClient;
+
+    if (!adminId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (!notificationGuildId) {
+      return res.status(400).json({ error: "Guild ID is required" });
+    }
+
+    const application = await getApplicationById(id);
+
+    if (application.status !== "approved") {
+      return res.status(400).json({ error: "Only approved applications can have notifications resent" });
+    }
+
+    // Resend Discord notification using saved config
+    let notificationSent = false;
+    if (client) {
+      try {
+        const config = await getWhitelistConfig(notificationGuildId);
+
+        if (config && config.channelId) {
+          const notificationSuccess = await sendWhitelistApproved(client, application, {
+            channelId: config.channelId,
+            guildId: notificationGuildId,
+            roleId: config.roleId,
+            embedTemplate: config.embedTemplate
+          });
+
+          notificationSent = notificationSuccess;
+          if (!notificationSuccess) {
+            return res.status(500).json({ error: "Failed to send notification - bot may not have permission to send messages" });
+          }
+        } else {
+          return res.status(400).json({ error: "No configuration found for this guild" });
+        }
+      } catch (configError) {
+        logger.error(`Could not resend notification:`, configError);
+        return res.status(500).json({ error: "Failed to load guild configuration" });
+      }
+    } else {
+      return res.status(500).json({ error: "Discord client not available" });
+    }
+
+    res.json({
+      success: true,
+      message: "Notification resent successfully",
+      notificationSent
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    logger.error("Error resending notification", error);
+    res.status(500).json({ error: "Failed to resend notification" });
+  }
+}
+
 // GET /api/whitelist/:id
 // Get a single application (admin only)
 async function getApplication(req, res) {
@@ -299,6 +365,7 @@ module.exports = {
   approveApplicationEndpoint,
   rejectApplicationEndpoint,
   deleteApplicationEndpoint,
+  resendApplicationNotification,
   getWhitelistConfigEndpoint,
   saveWhitelistConfigEndpoint
 };

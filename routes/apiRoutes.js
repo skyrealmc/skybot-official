@@ -44,6 +44,7 @@ const {
   approveApplicationEndpoint,
   rejectApplicationEndpoint,
   deleteApplicationEndpoint,
+  resendApplicationNotification,
   getWhitelistConfigEndpoint,
   saveWhitelistConfigEndpoint
 } = require("../controllers/whitelistController");
@@ -128,6 +129,7 @@ function createApiRouter({ client }) {
   router.get("/whitelist/:id", requireAccountCapability("manage_settings"), getApplication);
   router.post("/whitelist/approve/:id", requireAccountCapability("manage_settings"), approveApplicationEndpoint);
   router.post("/whitelist/reject/:id", requireAccountCapability("manage_settings"), rejectApplicationEndpoint);
+  router.post("/whitelist/:id/resend", requireAccountCapability("manage_settings"), resendApplicationNotification);
   router.delete("/whitelist/:id", requireAccountCapability("manage_settings"), deleteApplicationEndpoint);
   
   // Whitelist config routes for embed customization
