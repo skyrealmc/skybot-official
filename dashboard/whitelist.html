@@ -564,6 +564,96 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Embed Customizer Section -->
+                <div class="whitelist-card" style="margin-top: 32px;">
+                    <div class="whitelist-card-header">
+                        <h2 class="whitelist-card-title">Embed Customizer</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">Customize approval notification embed and select target Discord channel</p>
+                    </div>
+
+                    <div style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <!-- Left: Settings Form -->
+                        <div>
+                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Discord Channel Selection</h3>
+                            
+                            <label style="display: block; margin-bottom: 16px;">
+                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Server</span>
+                                <select id="embedGuildSelect" class="form-control" style="width: 100%;">
+                                    <option value="">Select a server...</option>
+                                </select>
+                            </label>
+
+                            <label style="display: block; margin-bottom: 24px;">
+                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Channel</span>
+                                <select id="embedChannelSelect" class="form-control" style="width: 100%;">
+                                    <option value="">Select a channel...</option>
+                                </select>
+                            </label>
+
+                            <hr style="border: 1px solid var(--border); margin-bottom: 24px;">
+
+                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Embed Template</h3>
+
+                            <label style="display: block; margin-bottom: 16px;">
+                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Title</span>
+                                <input type="text" id="embedTitle" class="form-control" placeholder="✅ Whitelist Application Approved" value="✅ Whitelist Application Approved" style="width: 100%;">
+                            </label>
+
+                            <label style="display: block; margin-bottom: 16px;">
+                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Description</span>
+                                <textarea id="embedDescription" class="form-control" rows="4" placeholder="Welcome message..." style="width: 100%;">Welcome to Sky Realms SMP! Your whitelist application has been approved.</textarea>
+                            </label>
+
+                            <label style="display: block; margin-bottom: 16px;">
+                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Color</span>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="color" id="embedColor" class="form-control" value="#28a745" style="width: 60px; padding: 4px;">
+                                    <input type="text" id="embedColorHex" class="form-control" value="#28a745" placeholder="#28a745" style="flex: 1;">
+                                </div>
+                            </label>
+
+                            <label style="display: block; margin-bottom: 16px;">
+                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Footer</span>
+                                <input type="text" id="embedFooter" class="form-control" placeholder="Sky Realms SMP" value="Sky Realms SMP" style="width: 100%;">
+                            </label>
+
+                            <label style="display: block; margin-bottom: 24px;">
+                                <span style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">Author</span>
+                                <input type="text" id="embedAuthor" class="form-control" placeholder="Whitelist System" value="Whitelist System" style="width: 100%;">
+                            </label>
+
+                            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+                                <input type="checkbox" id="embedTimestamp" checked style="cursor: pointer;">
+                                <span style="font-size: 0.9rem; color: var(--text-primary);">Include timestamp</span>
+                            </label>
+
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="saveEmbedTemplate()" class="btn btn-primary" style="flex: 1;">Save Template</button>
+                                <button onclick="testEmbedMessage()" class="btn btn-secondary" style="flex: 1;">Test Send</button>
+                            </div>
+                        </div>
+
+                        <!-- Right: Preview -->
+                        <div>
+                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Preview</h3>
+                            <div id="embedPreview" style="
+                                background: var(--bg-tertiary);
+                                border: 1px solid var(--border);
+                                border-radius: var(--radius-lg);
+                                padding: 16px;
+                                min-height: 300px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: var(--text-secondary);
+                                font-size: 0.9rem;
+                            ">
+                                <span>Preview will appear here</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
@@ -591,6 +681,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadApplications();
             setupEventListeners();
+            initializeEmbedCustomizer();
         });
 
         function setupEventListeners() {
@@ -817,6 +908,229 @@
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return text.replace(/[&<>"']/g, m => map[m]);
         }
+
+        // ============= EMBED CUSTOMIZER FUNCTIONS =============
+
+        async function initializeEmbedCustomizer() {
+            await loadGuilds();
+            await loadEmbedTemplate();
+            setupEmbedListeners();
+        }
+
+        function setupEmbedListeners() {
+            // Update color hex when color picker changes
+            document.getElementById('embedColor').addEventListener('change', (e) => {
+                document.getElementById('embedColorHex').value = e.target.value;
+                updateEmbedPreview();
+            });
+
+            document.getElementById('embedColorHex').addEventListener('input', (e) => {
+                if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                    document.getElementById('embedColor').value = e.target.value;
+                    updateEmbedPreview();
+                }
+            });
+
+            // Update preview when any embed field changes
+            ['embedTitle', 'embedDescription', 'embedColor', 'embedFooter', 'embedAuthor', 'embedTimestamp'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const eventType = element.type === 'checkbox' ? 'change' : 'input';
+                    element.addEventListener(eventType, updateEmbedPreview);
+                }
+            });
+
+            // Load channels when guild changes
+            document.getElementById('embedGuildSelect').addEventListener('change', loadChannels);
+        }
+
+        async function loadGuilds() {
+            try {
+                const response = await fetch('/api/guilds', { credentials: 'include' });
+                const guilds = await response.json();
+
+                const select = document.getElementById('embedGuildSelect');
+                select.innerHTML = '<option value="">Select a server...</option>';
+                
+                if (Array.isArray(guilds) && guilds.length > 0) {
+                    guilds.forEach(guild => {
+                        if (guild.botPresent) {
+                            const option = document.createElement('option');
+                            option.value = guild.id;
+                            option.textContent = guild.name;
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading guilds:', error);
+            }
+        }
+
+        async function loadChannels() {
+            const guildId = document.getElementById('embedGuildSelect').value;
+            if (!guildId) {
+                document.getElementById('embedChannelSelect').innerHTML = '<option value="">Select a channel...</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/channels/${guildId}`, { credentials: 'include' });
+                const channels = await response.json();
+
+                const select = document.getElementById('embedChannelSelect');
+                select.innerHTML = '<option value="">Select a channel...</option>';
+
+                if (Array.isArray(channels)) {
+                    channels.forEach(channel => {
+                        const option = document.createElement('option');
+                        option.value = channel.id;
+                        option.textContent = `# ${channel.name}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading channels:', error);
+            }
+        }
+
+        async function loadEmbedTemplate() {
+            const guildId = document.getElementById('embedGuildSelect').value;
+            if (!guildId) return;
+
+            try {
+                const response = await fetch(`/api/whitelist/config/${guildId}`, { credentials: 'include' });
+                const data = await response.json();
+
+                if (data.config && data.config.embedTemplate) {
+                    const template = data.config.embedTemplate;
+                    document.getElementById('embedTitle').value = template.title || '';
+                    document.getElementById('embedDescription').value = template.description || '';
+                    document.getElementById('embedColor').value = template.color || '#28a745';
+                    document.getElementById('embedColorHex').value = template.color || '#28a745';
+                    document.getElementById('embedFooter').value = template.footer || '';
+                    document.getElementById('embedAuthor').value = template.author || '';
+                    document.getElementById('embedTimestamp').checked = template.includeTimestamp !== false;
+
+                    if (data.config.channelId) {
+                        document.getElementById('embedChannelSelect').value = data.config.channelId;
+                    }
+                }
+
+                updateEmbedPreview();
+            } catch (error) {
+                console.error('Error loading embed template:', error);
+            }
+        }
+
+        function updateEmbedPreview() {
+            const title = document.getElementById('embedTitle').value || '✅ Whitelist Application Approved';
+            const description = document.getElementById('embedDescription').value || 'Welcome to Sky Realms SMP!';
+            const color = document.getElementById('embedColor').value || '#28a745';
+            const footer = document.getElementById('embedFooter').value || 'Sky Realms SMP';
+            const author = document.getElementById('embedAuthor').value || 'Whitelist System';
+            const timestamp = document.getElementById('embedTimestamp').checked;
+
+            const previewHTML = `
+                <div style="
+                    background: var(--bg-secondary);
+                    border-left: 4px solid ${color};
+                    border-radius: var(--radius-md);
+                    padding: 12px;
+                    width: 100%;
+                ">
+                    ${author ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px;">${escapeHtml(author)}</div>` : ''}
+                    <div style="font-weight: 600; font-size: 1rem; color: var(--text-primary); margin-bottom: 8px;">${escapeHtml(title)}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px; line-height: 1.4;">${escapeHtml(description).replace(/\n/g, '<br>')}</div>
+                    <div style="
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 12px;
+                        margin-bottom: 12px;
+                        padding-bottom: 12px;
+                        border-bottom: 1px solid var(--border);
+                    ">
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Minecraft Username</div>
+                            <div style="color: var(--text-primary); font-family: monospace;">chris3656</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Discord</div>
+                            <div style="color: var(--text-primary);">@sample_user</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Approved</div>
+                            <div style="color: var(--text-primary);">${new Date().toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    ${footer ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(footer)}</div>` : ''}
+                    ${timestamp ? `<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">Today at ${new Date().toLocaleTimeString()}</div>` : ''}
+                </div>
+            `;
+
+            document.getElementById('embedPreview').innerHTML = previewHTML;
+        }
+
+        async function saveEmbedTemplate() {
+            const guildId = document.getElementById('embedGuildSelect').value;
+            const channelId = document.getElementById('embedChannelSelect').value;
+
+            if (!guildId || !channelId) {
+                alert('Please select both a server and channel');
+                return;
+            }
+
+            const embedTemplate = {
+                title: document.getElementById('embedTitle').value,
+                description: document.getElementById('embedDescription').value,
+                color: document.getElementById('embedColor').value,
+                footer: document.getElementById('embedFooter').value,
+                author: document.getElementById('embedAuthor').value,
+                includeTimestamp: document.getElementById('embedTimestamp').checked
+            };
+
+            try {
+                const response = await fetch(`/api/whitelist/config/${guildId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ channelId, embedTemplate })
+                });
+
+                if (!response.ok) throw new Error('Failed to save config');
+
+                alert('✅ Embed template saved successfully!');
+            } catch (error) {
+                console.error('Error saving template:', error);
+                alert('Failed to save template');
+            }
+        }
+
+        async function testEmbedMessage() {
+            const guildId = document.getElementById('embedGuildSelect').value;
+            const channelId = document.getElementById('embedChannelSelect').value;
+
+            if (!guildId || !channelId) {
+                alert('Please select both a server and channel');
+                return;
+            }
+
+            try {
+                // For testing, send a sample approved message
+                alert('✅ Test message would be sent to the selected channel. Save the template first to enable actual sending.');
+            } catch (error) {
+                console.error('Error sending test:', error);
+                alert('Failed to send test message');
+            }
+        }
+
+        // Initialize embed customizer on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadApplications();
+            setupEventListeners();
+            initializeEmbedCustomizer();
+        });
+
     </script>
 </body>
 </html>
