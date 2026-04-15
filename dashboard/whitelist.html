@@ -852,17 +852,18 @@
             if (!currentApplicationId) return;
 
             try {
-                const customMessage = document.getElementById('customMessage')?.value || '';
+                const guildId = document.getElementById('embedGuildSelect').value;
                 const response = await fetch(`/api/whitelist/approve/${currentApplicationId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ approvalMessage: customMessage })
+                    body: JSON.stringify({ notificationGuildId: guildId })
                 });
 
                 if (!response.ok) throw new Error('Failed to approve');
 
-                alert('Application approved!');
+                const data = await response.json();
+                alert(`✅ Application approved!${data.notificationSent ? ' Notification sent to Discord.' : ''}`);
                 closeApplicationModal();
                 loadApplications();
             } catch (error) {

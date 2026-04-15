@@ -69,7 +69,7 @@ async function listApplications(req, res) {
 async function approveApplicationEndpoint(req, res) {
   try {
     const { id } = req.params;
-    const { approvalMessage, notificationChannelId, notificationGuildId, assignRoleId } = req.body;
+    const { notificationGuildId } = req.body;
     const adminId = req.session.user?.id;
     const client = req.app.locals.discordClient;
 
@@ -77,19 +77,29 @@ async function approveApplicationEndpoint(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const application = await approveApplication(id, adminId, approvalMessage);
+    const application = await approveApplication(id, adminId);
 
-    // Send Discord notification if client and channel are available
-    if (client && notificationChannelId) {
-      const notificationSuccess = await sendWhitelistApproved(client, application, {
-        channelId: notificationChannelId,
-        guildId: notificationGuildId,
-        message: approvalMessage,
-        roleId: assignRoleId
-      });
+    // Auto-send Discord notification using saved config
+    let notificationSent = false;
+    if (client && notificationGuildId) {
+      try {
+        const config = await getWhitelistConfig(notificationGuildId);
 
-      if (!notificationSuccess) {
-        logger.warn(`Approval notification failed for application ${id}, but approval was recorded`);
+        if (config && config.channelId) {
+          const notificationSuccess = await sendWhitelistApproved(client, application, {
+            channelId: config.channelId,
+            guildId: notificationGuildId,
+            roleId: config.roleId,
+            embedTemplate: config.embedTemplate
+          });
+
+          notificationSent = notificationSuccess;
+          if (!notificationSuccess) {
+            logger.warn(`Approval notification failed for application ${id}, but approval was recorded`);
+          }
+        }
+      } catch (configError) {
+        logger.warn(`Could not load config for guild ${notificationGuildId}:`, configError.message);
       }
     }
 
@@ -97,7 +107,7 @@ async function approveApplicationEndpoint(req, res) {
       success: true,
       message: "Application approved successfully",
       application,
-      notificationSent: client && notificationChannelId ? true : false
+      notificationSent
     });
   } catch (error) {
     if (error.status) {
