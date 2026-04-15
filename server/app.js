@@ -130,6 +130,10 @@ function createApp({ client }) {
     res.sendFile(path.join(__dirname, "..", "dashboard", "whitelist.html"));
   });
 
+  app.get("/templates", (_req, res) => {
+    res.sendFile(path.join(__dirname, "..", "dashboard", "index.html"));
+  });
+
   // Static files (CSS, JS, images, etc.)
   app.use(express.static(path.join(__dirname, "..", "dashboard")));
 
