@@ -3,9 +3,10 @@
 ## Project Overview
 
 A full-stack Discord bot and web dashboard built with Node.js + Express, discord.js v14, and MongoDB. The system consists of:
-- **Dashboard**: Web interface for message building, scheduling, and analytics
+- **Dashboard**: Web interface for message building, scheduling, analytics, and **whitelist management**
 - **Discord Bot**: Slash commands (moderation, utility, admin) with per-guild configuration
 - **Scheduler**: Cron-based message scheduling with timezone support
+- **Whitelist System**: Application submission, admin approval workflow, Discord notifications
 - **API**: RESTful backend with capability-based access control
 
 ## Build, Test & Lint Commands
@@ -115,10 +116,24 @@ npm run dev         # Run with auto-reload (nodemon)
 - **Per-Guild Metrics**: Command usage and errors tracked in Metric model
 
 ### Frontend (Dashboard)
-- **Clean URLs**: Routes like `/`, `/analytics`, `/scheduler` (no `.html` extensions)
+- **Clean URLs**: Routes like `/`, `/analytics`, `/scheduler`, `/whitelist` (no `.html` extensions)
 - **SPA Pattern**: Single HTML file with tab-based navigation
 - **API Communication**: All data via `/api/*` endpoints; frontend never handles permissions
 - **UI State**: Guild/channel selectors sync with backend; bot status gating for actions
+- **Whitelist Management**: Admin dashboard at `/whitelist` for reviewing and approving applications
+
+### Whitelist System (NEW)
+- **Public Form** (`dashboard/whitelist/whitelist.html`): User submission for whitelist applications
+- **Admin Dashboard** (`dashboard/whitelist.html`): Review, filter, approve/reject applications
+- **MongoDB Model** (`models/WhitelistApplication.js`): Store application data
+- **API Endpoints** (`routes/apiRoutes.js`):
+  - `POST /api/whitelist/apply` - Public form submission
+  - `GET /api/whitelist/list` - Admin: list applications (filterable by status)
+  - `GET /api/whitelist/:id` - Admin: view application details
+  - `POST /api/whitelist/approve/:id` - Admin: approve with optional message
+  - `POST /api/whitelist/reject/:id` - Admin: reject application
+- **Discord Notifications** (`services/whitelistNotificationService.js`): Auto-send approval embeds to Discord
+- **Duplicate Prevention**: 24-hour window per Discord ID to prevent spam
 
 ### Error Handling
 - **Status Codes**: `401` (unauthenticated), `403` (insufficient permission), `409` (bot not present)
