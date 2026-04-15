@@ -618,7 +618,9 @@
                     ? `/api/whitelist/list?status=${currentFilter}`
                     : '/api/whitelist/list';
 
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    credentials: 'include'
+                });
                 if (!response.ok) throw new Error('Failed to load applications');
 
                 const data = await response.json();
@@ -678,7 +680,9 @@
 
         async function viewApplication(id) {
             try {
-                const response = await fetch(`/api/whitelist/${id}`);
+                const response = await fetch(`/api/whitelist/${id}`, {
+                    credentials: 'include'
+                });
                 if (!response.ok) throw new Error('Failed to load application');
 
                 const data = await response.json();
@@ -761,6 +765,7 @@
                 const response = await fetch(`/api/whitelist/approve/${currentApplicationId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ approvalMessage: customMessage })
                 });
 
@@ -781,7 +786,8 @@
             try {
                 const response = await fetch(`/api/whitelist/reject/${currentApplicationId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
                 });
 
                 if (!response.ok) throw new Error('Failed to reject');
