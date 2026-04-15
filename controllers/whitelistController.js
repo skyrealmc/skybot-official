@@ -3,7 +3,8 @@ const {
   getApplications,
   getApplicationById,
   approveApplication,
-  rejectApplication
+  rejectApplication,
+  deleteApplication
 } = require("../services/whitelistService");
 const { sendWhitelistApproved } = require("../services/whitelistNotificationService");
 const {
@@ -145,6 +146,32 @@ async function rejectApplicationEndpoint(req, res) {
   }
 }
 
+// DELETE /api/whitelist/:id
+// Admin endpoint - delete an application
+async function deleteApplicationEndpoint(req, res) {
+  try {
+    const { id } = req.params;
+    const adminId = req.session.user?.id;
+
+    if (!adminId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const result = await deleteApplication(id, adminId);
+
+    res.json({
+      success: true,
+      message: "Application deleted successfully"
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    logger.error("Error deleting application", error);
+    res.status(500).json({ error: "Failed to delete application" });
+  }
+}
+
 // GET /api/whitelist/:id
 // Get a single application (admin only)
 async function getApplication(req, res) {
@@ -231,6 +258,7 @@ module.exports = {
   getApplication,
   approveApplicationEndpoint,
   rejectApplicationEndpoint,
+  deleteApplicationEndpoint,
   getWhitelistConfigEndpoint,
   saveWhitelistConfigEndpoint
 };

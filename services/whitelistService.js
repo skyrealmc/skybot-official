@@ -143,6 +143,15 @@ async function rejectApplication(id, adminId) {
   return application;
 }
 
+// Delete a whitelist application (admin only)
+async function deleteApplication(id, adminId) {
+  const application = await getApplicationById(id);
+
+  await WhitelistApplication.findByIdAndDelete(id);
+  logger.info(`Application ${id} deleted by ${adminId}`);
+  return { success: true, message: "Application deleted successfully" };
+}
+
 module.exports = {
   validateWhitelistInput,
   checkDuplicateSubmission,
@@ -150,5 +159,6 @@ module.exports = {
   getApplications,
   getApplicationById,
   approveApplication,
-  rejectApplication
+  rejectApplication,
+  deleteApplication
 };

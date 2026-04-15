@@ -670,6 +670,7 @@
                 <button class="btn btn-secondary" onclick="closeApplicationModal()">Close</button>
                 <button class="btn btn-danger" id="rejectBtn" onclick="rejectApplication()" style="display:none;">Reject</button>
                 <button class="btn btn-success" id="approveBtn" onclick="approveApplication()" style="display:none;">Approve</button>
+                <button class="btn btn-danger" id="deleteBtn" onclick="deleteApplication()" style="display:none; background-color: #dc3545; border-color: #dc3545;">Delete</button>
             </div>
         </div>
     </div>
@@ -824,6 +825,7 @@
 
                 document.getElementById('approveBtn').style.display = app.status === 'pending' ? 'block' : 'none';
                 document.getElementById('rejectBtn').style.display = app.status === 'pending' ? 'block' : 'none';
+                document.getElementById('deleteBtn').style.display = app.status === 'approved' ? 'block' : 'none';
                 modal.classList.add('active');
             } catch (error) {
                 console.error('Error:', error);
@@ -890,6 +892,27 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('Failed to reject application');
+            }
+        }
+
+        async function deleteApplication() {
+            if (!currentApplicationId || !confirm('Delete this approved application? This action cannot be undone.')) return;
+
+            try {
+                const response = await fetch(`/api/whitelist/${currentApplicationId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete');
+
+                alert('Application deleted successfully');
+                closeApplicationModal();
+                loadApplications();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete application');
             }
         }
 
