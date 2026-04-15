@@ -42,7 +42,9 @@ const {
   listApplications,
   getApplication,
   approveApplicationEndpoint,
-  rejectApplicationEndpoint
+  rejectApplicationEndpoint,
+  getWhitelistConfigEndpoint,
+  saveWhitelistConfigEndpoint
 } = require("../controllers/whitelistController");
 
 function createApiRouter({ client }) {
@@ -125,6 +127,10 @@ function createApiRouter({ client }) {
   router.get("/whitelist/:id", requireAccountCapability("manage_settings"), getApplication);
   router.post("/whitelist/approve/:id", requireAccountCapability("manage_settings"), approveApplicationEndpoint);
   router.post("/whitelist/reject/:id", requireAccountCapability("manage_settings"), rejectApplicationEndpoint);
+  
+  // Whitelist config routes for embed customization
+  router.get("/whitelist/config/:guildId", requireAccountCapability("manage_settings"), getWhitelistConfigEndpoint);
+  router.post("/whitelist/config/:guildId", requireAccountCapability("manage_settings"), saveWhitelistConfigEndpoint);
 
   return router;
 }

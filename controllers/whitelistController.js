@@ -6,6 +6,10 @@ const {
   rejectApplication
 } = require("../services/whitelistService");
 const { sendWhitelistApproved } = require("../services/whitelistNotificationService");
+const {
+  getWhitelistConfig,
+  saveWhitelistConfig
+} = require("../services/whitelistConfigService");
 const logger = require("../utils/logger");
 
 // POST /api/whitelist/apply
@@ -151,10 +155,72 @@ async function getApplication(req, res) {
   }
 }
 
+// GET /api/whitelist/config/:guildId
+// Get whitelist embed config for a guild
+async function getWhitelistConfigEndpoint(req, res) {
+  try {
+    const { guildId } = req.params;
+    const config = await getWhitelistConfig(guildId);
+
+    res.json({
+      success: true,
+      config: config || {
+        guildId,
+        embedTemplate: {
+          title: "✅ Whitelist Application Approved",
+          description: "Welcome to Sky Realms SMP! Your whitelist application has been approved.",
+          color: "#28a745",
+          footer: "Sky Realms SMP",
+          author: "Whitelist System",
+          includeTimestamp: true
+        }
+      }
+    });
+  } catch (error) {
+    logger.error("Error fetching whitelist config", error);
+    res.status(500).json({ error: "Failed to fetch config" });
+  }
+}
+
+// POST /api/whitelist/config/:guildId
+// Save whitelist embed config for a guild
+async function saveWhitelistConfigEndpoint(req, res) {
+  try {
+    const { guildId } = req.params;
+    const adminId = req.session.user?.id;
+    const { channelId, embedTemplate, roleId } = req.body;
+
+    if (!adminId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (!channelId) {
+      return res.status(400).json({ error: "Channel ID is required" });
+    }
+
+    const config = await saveWhitelistConfig(guildId, adminId, {
+      channelId,
+      embedTemplate,
+      roleId
+    });
+
+    res.json({
+      success: true,
+      message: "Whitelist config saved successfully",
+      config
+    });
+  } catch (error) {
+    logger.error("Error saving whitelist config", error);
+    res.status(500).json({ error: "Failed to save config" });
+  }
+}
+
 module.exports = {
   submitApplication,
   listApplications,
   getApplication,
   approveApplicationEndpoint,
-  rejectApplicationEndpoint
+  rejectApplicationEndpoint,
+  getWhitelistConfigEndpoint,
+  saveWhitelistConfigEndpoint
 };
