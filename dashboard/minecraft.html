@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minecraft Integration</title>
+    <meta name="description" content="Minecraft server monitoring and alert integration settings." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .minecraft-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+      }
+
+      .minecraft-content {
+        flex: 1;
+        max-width: 1100px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .minecraft-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .minecraft-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 18px;
+      }
+
+      .minecraft-card h2 {
+        margin-bottom: 14px;
+        font-size: 1rem;
+      }
+
+      .minecraft-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #6b7280;
+      }
+
+      .status-dot.online {
+        background: #22c55e;
+      }
+
+      .status-dot.offline {
+        background: #ef4444;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .field label {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+      }
+
+      .field input,
+      .field select {
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-radius: var(--radius-sm);
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .hint {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+      }
+
+      @media (max-width: 900px) {
+        .minecraft-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="minecraft-page">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-logo">
+            <img id="topbarBotAvatar" src="/favicon.svg" alt="Bot avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border);" />
+          </div>
+          <span class="topbar-title" id="topbarBotTitle">Loading Dashboard</span>
+        </div>
+        <div class="topbar-right">
+          <a href="/" class="topbar-icon-btn" title="Back to Builder">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5"></path>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <main class="minecraft-content">
+        <div style="margin-bottom: 18px;">
+          <h1 style="margin-bottom: 6px;">Minecraft Integration</h1>
+          <p class="hint">Live Bedrock status monitoring, Discord alerts, and restart automation.</p>
+        </div>
+
+        <div class="minecraft-grid">
+          <section class="minecraft-card">
+            <h2>Live Server Status</h2>
+            <div class="minecraft-status" style="margin-bottom: 12px;">
+              <span id="serverStatusDot" class="status-dot"></span>
+              <span id="serverStatusText">Unknown</span>
+            </div>
+            <div class="hint">Last check: <span id="lastCheckAt">-</span></div>
+            <div class="hint">Last event: <span id="lastEvent">-</span></div>
+            <div class="hint">Players online: <span id="playersOnline">-</span></div>
+            <div class="hint">Last restart attempt: <span id="lastRestartAt">-</span></div>
+            <div class="hint" id="statusError" style="color:#ef4444;margin-top:8px;"></div>
+          </section>
+
+          <section class="minecraft-card">
+            <h2>Channel & Mention</h2>
+            <div class="field">
+              <label for="guildId">Guild</label>
+              <select id="guildId">
+                <option value="">Select guild...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="channelId">Alert Channel</label>
+              <select id="channelId">
+                <option value="">Select channel...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="mentionType">Mention Type</label>
+              <select id="mentionType">
+                <option value="everyone">@everyone</option>
+                <option value="here">@here</option>
+                <option value="role">Role</option>
+              </select>
+            </div>
+            <div class="field hidden" id="roleField">
+              <label for="mentionRoleId">Role ID</label>
+              <input id="mentionRoleId" type="text" placeholder="Discord role ID" />
+            </div>
+          </section>
+
+          <section class="minecraft-card">
+            <h2>Alert Templates</h2>
+            <div class="field">
+              <label for="onlineGif">Online GIF URL</label>
+              <input id="onlineGif" type="url" placeholder="https://..." />
+            </div>
+            <div class="field">
+              <label for="offlineGif">Offline GIF URL</label>
+              <input id="offlineGif" type="url" placeholder="https://..." />
+            </div>
+            <div class="field">
+              <label for="restartGif">Restart GIF URL</label>
+              <input id="restartGif" type="url" placeholder="https://..." />
+            </div>
+          </section>
+
+          <section class="minecraft-card">
+            <h2>Monitoring & Recovery</h2>
+            <div class="field">
+              <label for="serverAddress">Server Address</label>
+              <input id="serverAddress" type="text" placeholder="play.skyrealm.fun:25773" />
+            </div>
+            <div class="field">
+              <label for="joinUrl">Join URL</label>
+              <input id="joinUrl" type="url" placeholder="https://skyrealm.fun" />
+            </div>
+            <div class="field">
+              <label for="restartCooldownMs">Restart Cooldown (ms)</label>
+              <input id="restartCooldownMs" type="number" min="10000" step="1000" />
+            </div>
+            <div class="field">
+              <label>
+                <input id="alertsEnabled" type="checkbox" /> Alerts Enabled
+              </label>
+            </div>
+            <div class="field">
+              <label>
+                <input id="autoRestartEnabled" type="checkbox" /> Auto Restart Enabled
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <div class="minecraft-card" style="margin-top:16px;">
+          <div class="actions">
+            <button class="btn-primary" id="saveBtn">Save Settings</button>
+            <select id="testType">
+              <option value="online">Test Online Alert</option>
+              <option value="offline">Test Offline Alert</option>
+              <option value="restart">Test Restart Alert</option>
+            </select>
+            <button class="btn-secondary" id="testBtn">Send Test Alert</button>
+            <span class="hint" id="actionMessage"></span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/minecraft.js"></script>
+  </body>
+</html>

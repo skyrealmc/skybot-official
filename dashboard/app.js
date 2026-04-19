@@ -74,6 +74,7 @@ const elements = {
   inviteBotBtn: document.querySelector("#inviteBotBtn"),
   analyticsLink: document.querySelector("#analyticsLink"),
   schedulerLink: document.querySelector("#schedulerLink"),
+  minecraftLink: document.querySelector("#minecraftLink"),
   botStatusAvatar: document.querySelector("#botStatusAvatar"),
   botStatusDot: document.querySelector("#botStatusDot"),
   botStatusBadge: document.querySelector("#botStatusBadge")
@@ -192,6 +193,9 @@ function applyAccountLevelRestrictions() {
   }
   if (elements.schedulerLink) {
     elements.schedulerLink.classList.toggle("hidden", !hasAccountCapability("manage_settings"));
+  }
+  if (elements.minecraftLink) {
+    elements.minecraftLink.classList.toggle("hidden", !hasAccountCapability("manage_settings"));
   }
 }
 

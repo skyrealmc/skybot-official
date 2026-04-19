@@ -48,6 +48,12 @@ const {
   getWhitelistConfigEndpoint,
   saveWhitelistConfigEndpoint
 } = require("../controllers/whitelistController");
+const {
+  getMinecraftStatus,
+  getMinecraftConfigEndpoint,
+  updateMinecraftConfigEndpoint,
+  sendMinecraftTestAlert
+} = require("../controllers/minecraftController");
 
 function createApiRouter({ client }) {
   const router = express.Router();
@@ -135,6 +141,12 @@ function createApiRouter({ client }) {
   // Whitelist config routes for embed customization
   router.get("/whitelist/config/:guildId", requireAccountCapability("manage_settings"), getWhitelistConfigEndpoint);
   router.post("/whitelist/config/:guildId", requireAccountCapability("manage_settings"), saveWhitelistConfigEndpoint);
+
+  // Minecraft monitoring integration routes
+  router.get("/minecraft/status", requireAccountCapability("manage_settings"), getMinecraftStatus());
+  router.get("/minecraft/config", requireAccountCapability("manage_settings"), getMinecraftConfigEndpoint());
+  router.put("/minecraft/config", scheduleCreateLimiter, requireAccountCapability("manage_settings"), updateMinecraftConfigEndpoint({ client }));
+  router.post("/minecraft/test-alert", scheduleCreateLimiter, requireAccountCapability("manage_settings"), sendMinecraftTestAlert());
 
   return router;
 }

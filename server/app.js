@@ -9,6 +9,7 @@ const authRouter = require("./auth");
 const apiRouter = require("./api");
 const errorHandler = require("../middlewares/errorHandler");
 const SchedulerService = require("../services/schedulerService");
+const MinecraftMonitorService = require("../services/minecraft");
 const logger = require("../utils/logger");
 
 function getBotAvatarUrl(user) {
@@ -27,6 +28,7 @@ function createApp({ client }) {
 
   // Initialize scheduler service
   const scheduler = new SchedulerService(client);
+  const minecraftMonitor = new MinecraftMonitorService(client);
 
   if (isProduction) {
     app.set("trust proxy", 1);
@@ -87,8 +89,10 @@ function createApp({ client }) {
     }
     // Store scheduler and client references for API access
     app.locals.scheduler = scheduler;
+    app.locals.minecraftMonitor = minecraftMonitor;
     app.locals.discordClient = client;
     req.app.set("scheduler", scheduler);
+    req.app.set("minecraftMonitor", minecraftMonitor);
     req.app.set("discordClient", client);
     next();
   });
@@ -109,6 +113,10 @@ function createApp({ client }) {
     res.redirect(301, "/scheduler");
   });
 
+  app.get("/minecraft.html", (_req, res) => {
+    res.redirect(301, "/minecraft");
+  });
+
   // Clean routes - serve HTML files without .html extension
   app.get("/", (_req, res) => {
     res.sendFile(path.join(__dirname, "..", "dashboard", "index.html"));
@@ -124,6 +132,14 @@ function createApp({ client }) {
 
   app.get("/scheduler", (_req, res) => {
     res.sendFile(path.join(__dirname, "..", "dashboard", "scheduler.html"));
+  });
+
+  app.get("/minecraft", (_req, res) => {
+    res.sendFile(path.join(__dirname, "..", "dashboard", "minecraft.html"));
+  });
+
+  app.get("/dashboard/minecraft", (_req, res) => {
+    res.sendFile(path.join(__dirname, "..", "dashboard", "minecraft.html"));
   });
 
   app.get("/whitelist", (_req, res) => {
@@ -188,12 +204,20 @@ function createApp({ client }) {
     } catch (error) {
       logger.error("Failed to initialize scheduler:", error);
     }
+
+    try {
+      await minecraftMonitor.start();
+      logger.info("Minecraft monitor initialized successfully");
+    } catch (error) {
+      logger.error("Failed to initialize Minecraft monitor:", error);
+    }
   });
 
   // Graceful shutdown
   const gracefulShutdown = async (signal) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
     await scheduler.stop();
+    minecraftMonitor.stop();
     client?.reminderService?.stop();
     process.exit(0);
   };
