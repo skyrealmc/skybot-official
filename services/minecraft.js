@@ -39,6 +39,8 @@ class MinecraftMonitorService {
     this.lastEvent = "";
     this.lastRestartAttemptAt = null;
     this.lastPlayersOnline = null;
+    this.bootstrapTimer = null;
+    this.bootstrapChecksRemaining = 0;
   }
 
   async start() {
@@ -46,6 +48,7 @@ class MinecraftMonitorService {
     this.isRunning = true;
 
     await this.checkStatus();
+    this.startBootstrapBurst();
     this.timer = setInterval(() => {
       this.checkStatus().catch((error) => {
         this.lastError = error.message;
@@ -61,8 +64,36 @@ class MinecraftMonitorService {
       clearInterval(this.timer);
       this.timer = null;
     }
+    if (this.bootstrapTimer) {
+      clearInterval(this.bootstrapTimer);
+      this.bootstrapTimer = null;
+    }
+    this.bootstrapChecksRemaining = 0;
     this.isRunning = false;
     logger.info("Minecraft monitoring service stopped");
+  }
+
+  startBootstrapBurst() {
+    if (this.bootstrapTimer) {
+      clearInterval(this.bootstrapTimer);
+      this.bootstrapTimer = null;
+    }
+
+    // Run a few short checks after startup to reduce first-alert delay.
+    this.bootstrapChecksRemaining = 3;
+    this.bootstrapTimer = setInterval(() => {
+      if (this.bootstrapChecksRemaining <= 0) {
+        clearInterval(this.bootstrapTimer);
+        this.bootstrapTimer = null;
+        return;
+      }
+
+      this.bootstrapChecksRemaining -= 1;
+      this.checkStatus().catch((error) => {
+        this.lastError = error.message;
+        logger.warn(`Minecraft bootstrap check failed: ${error.message}`);
+      });
+    }, 5000);
   }
 
   getStatus() {
