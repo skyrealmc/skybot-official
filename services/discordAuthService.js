@@ -3,13 +3,16 @@ const axios = require("axios");
 const DISCORD_API = "https://discord.com/api/v10";
 const OAUTH_SCOPES = ["identify", "guilds"];
 
-function buildLoginUrl() {
+function buildLoginUrl(state) {
   const url = new URL(`${DISCORD_API}/oauth2/authorize`);
   url.searchParams.set("client_id", process.env.CLIENT_ID);
   url.searchParams.set("redirect_uri", process.env.REDIRECT_URI);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", OAUTH_SCOPES.join(" "));
   url.searchParams.set("prompt", "consent");
+  if (state) {
+    url.searchParams.set("state", state);
+  }
   return url.toString();
 }
 

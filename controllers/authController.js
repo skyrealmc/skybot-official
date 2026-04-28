@@ -24,10 +24,8 @@ function buildAvatarUrl(user) {
 }
 
 async function login(req, res) {
-  if (req.query.returnUrl) {
-    req.session.returnUrl = req.query.returnUrl;
-  }
-  res.redirect(buildLoginUrl());
+  const returnUrl = req.query.returnUrl || "";
+  res.redirect(buildLoginUrl(returnUrl));
 }
 
 async function isBotInGuild(client, guildId) {
@@ -50,6 +48,7 @@ async function isBotInGuild(client, guildId) {
 function callback({ client } = {}) {
   return async (req, res, next) => {
     const code = req.query.code;
+    const state = req.query.state; // This is our returnUrl
 
     if (!code) {
       return res.status(400).send("Missing OAuth code.");
@@ -71,7 +70,6 @@ function callback({ client } = {}) {
             name: guild.name,
             permissions: guild.permissions
           })),
-          // Preserve existing roles and allowedGuilds
           $setOnInsert: {
             roles: [],
             guildRoles: [],
@@ -82,12 +80,10 @@ function callback({ client } = {}) {
         { upsert: true, new: true, setDefaultsOnInsert: false }
       );
 
-      // Filter guilds where user has Manage Guild or Admin
       const permissionEligibleGuilds = guilds.filter((guild) =>
         hasDiscordManageGuildPerms(guild.permissions)
       );
 
-      // Further filter by allowedGuilds if set
       const finalGuilds = storedUser.allowedGuilds.length > 0
         ? permissionEligibleGuilds.filter((guild) => storedUser.allowedGuilds.includes(guild.id))
         : permissionEligibleGuilds;
@@ -138,9 +134,12 @@ function callback({ client } = {}) {
           permissions: guild.permissions
         }));
 
-      const returnUrl = req.session.returnUrl || "/";
-      delete req.session.returnUrl;
-      res.redirect(returnUrl);
+      // Redirect back to state (returnUrl) or dashboard
+      const redirectUrl = (state && state.startsWith("http")) ? state : "/";
+      
+      req.session.save(() => {
+        res.redirect(redirectUrl);
+      });
     } catch (error) {
       logger.error("OAuth callback failed", error);
       next(error);
@@ -168,7 +167,6 @@ function getSession(req, res) {
   const guildAccess = req.session.guildAccess || getFallbackSessionGuildAccess(req);
   const accountCapabilities = buildAccountCapabilities(guildAccess);
 
-  // Get bot info from session or from the request's client
   const botInfo = req.session.bot || {
     username: process.env.APP_NAME || "Bot",
     avatarUrl: "https://cdn.discordapp.com/embed/avatars/0.png"
