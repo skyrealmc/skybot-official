@@ -23,7 +23,10 @@ function buildAvatarUrl(user) {
   return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
 }
 
-async function login(_req, res) {
+async function login(req, res) {
+  if (req.query.returnUrl) {
+    req.session.returnUrl = req.query.returnUrl;
+  }
   res.redirect(buildLoginUrl());
 }
 
@@ -135,7 +138,9 @@ function callback({ client } = {}) {
           permissions: guild.permissions
         }));
 
-      res.redirect("/");
+      const returnUrl = req.session.returnUrl || "/";
+      delete req.session.returnUrl;
+      res.redirect(returnUrl);
     } catch (error) {
       logger.error("OAuth callback failed", error);
       next(error);
