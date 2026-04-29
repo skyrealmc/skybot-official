@@ -39,8 +39,53 @@ class MinecraftMonitorService {
     this.lastEvent = "";
     this.lastRestartAttemptAt = null;
     this.lastPlayersOnline = null;
+    this.playerList = [];
+    this.resourceHistory = [];
+    this.maxHistory = 20;
+    this.currentResources = { cpu: 0, memory: 0, disk: 0, state: "unknown" };
     this.bootstrapTimer = null;
     this.bootstrapChecksRemaining = 0;
+  }
+
+  async fetchResources() {
+    const apiKey = String(process.env.PTERO_API_KEY || "").trim();
+    const serverId = String(process.env.PTERO_SERVER_ID || "").trim();
+    const panelBase = String(process.env.PTERO_PANEL_URL || "https://panel.wammuhost.com").trim();
+
+    if (!apiKey || !serverId) return;
+
+    try {
+      const url = `${panelBase.replace(/\/+$/, "")}/api/client/servers/${serverId}/resources`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/json"
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const resources = data.attributes.resources;
+        this.currentResources = {
+          cpu: resources.cpu_absolute,
+          memory: resources.memory_bytes,
+          disk: resources.disk_bytes,
+          state: data.attributes.current_state
+        };
+
+        this.resourceHistory.push({
+          timestamp: new Date(),
+          cpu: resources.cpu_absolute,
+          memory: resources.memory_bytes / (1024 * 1024)
+        });
+
+        if (this.resourceHistory.length > this.maxHistory) {
+          this.resourceHistory.shift();
+        }
+      }
+    } catch (error) {
+      logger.warn(`Failed to fetch Minecraft resources: ${error.message}`);
+    }
   }
 
   async start() {
@@ -48,12 +93,14 @@ class MinecraftMonitorService {
     this.isRunning = true;
 
     await this.checkStatus();
+    await this.fetchResources().catch(() => {});
     this.startBootstrapBurst();
     this.timer = setInterval(() => {
       this.checkStatus().catch((error) => {
         this.lastError = error.message;
         logger.warn(`Minecraft monitor check failed: ${error.message}`);
       });
+      this.fetchResources().catch(() => {});
     }, this.intervalMs);
 
     logger.info("Minecraft monitoring service started");
@@ -106,7 +153,10 @@ class MinecraftMonitorService {
       lastError: this.lastError || "",
       lastEvent: this.lastEvent || "",
       lastRestartAttemptAt: this.lastRestartAttemptAt,
-      playersOnline: this.lastPlayersOnline
+      playersOnline: this.lastPlayersOnline,
+      playerList: this.playerList || [],
+      currentResources: this.currentResources,
+      resourceHistory: this.resourceHistory
     };
   }
 
@@ -121,6 +171,7 @@ class MinecraftMonitorService {
     const response = await this.fetchServerStatus(config.serverAddress);
     const online = Boolean(response?.online);
     const playersOnline = Number(response?.players?.online ?? 0);
+    this.playerList = response?.players?.list || [];
 
     const previous = this.lastKnownOnline;
     this.lastKnownOnline = online;

@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       .minecraft-page {
         min-height: 100vh;
@@ -22,7 +23,7 @@
 
       .minecraft-content {
         flex: 1;
-        max-width: 1100px;
+        max-width: 1200px;
         width: 100%;
         margin: 0 auto;
         padding: 24px;
@@ -34,11 +35,64 @@
         gap: 16px;
       }
 
+      .full-width {
+        grid-column: 1 / -1;
+      }
+
       .minecraft-card {
         background: var(--bg-card);
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
         padding: 18px;
+        height: 100%;
+      }
+
+      .resource-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 10px;
+      }
+
+      .resource-chart-container {
+        position: relative;
+        height: 150px;
+        width: 100%;
+      }
+
+      .player-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .player-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 10px;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+      }
+
+      .player-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 4px;
+        image-rendering: pixelated;
+      }
+
+      .player-name {
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
       }
 
       .minecraft-card h2 {
@@ -139,12 +193,32 @@
             <div class="minecraft-status" style="margin-bottom: 12px;">
               <span id="serverStatusDot" class="status-dot"></span>
               <span id="serverStatusText">Unknown</span>
+              <span id="serverState" class="hint" style="margin-left: auto;">-</span>
             </div>
             <div class="hint">Last check: <span id="lastCheckAt">-</span></div>
             <div class="hint">Last event: <span id="lastEvent">-</span></div>
             <div class="hint">Players online: <span id="playersOnline">-</span></div>
             <div class="hint">Last restart attempt: <span id="lastRestartAt">-</span></div>
-            <div class="hint" id="statusError" style="color:#ef4444;margin-top:8px;"></div>
+            <div id="statusError" style="color:#ef4444;margin-top:8px;font-size:0.8rem;"></div>
+          </section>
+
+          <section class="minecraft-card">
+            <h2>Server Resources</h2>
+            <div class="resource-grid">
+              <div class="resource-chart-container">
+                <canvas id="cpuChart"></canvas>
+              </div>
+              <div class="resource-chart-container">
+                <canvas id="ramChart"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <section class="minecraft-card full-width" id="playerListCard" style="display: none;">
+            <h2>Online Players</h2>
+            <div class="player-list" id="playerList">
+              <!-- Players injected here -->
+            </div>
           </section>
 
           <section class="minecraft-card">

@@ -72,6 +72,15 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 - Channel and guild selection
 - Reactions (emoji reactions to add after sending)
 
+### Minecraft Integration
+- **Automated Whitelisting** - Zero-touch flow: Approve an application and the bot automatically runs `/whitelist add` via Pterodactyl API.
+- **Advanced Server Dashboard** - Real-time monitoring of server status and resources.
+- **Resource Monitoring** - Live CPU and RAM usage graphs powered by Chart.js.
+- **Real-time Player List** - See who is online with Minecraft skin avatars.
+- **Auto-Restart System** - Automatic recovery via Pterodactyl power actions when server goes offline.
+- **Discord Alerts** - Configurable status alerts with custom GIFs and mentions.
+- **Whitelist Application System** - Public application form with admin review dashboard.
+
 ## Project Structure
 
 ```text
@@ -85,13 +94,17 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 ├── server                 # Express server setup
 ├── services               # Business logic
 ├── utils                  # Utility functions
+├── GEMINI.md              # Project documentation for AI agents
 └── index.js               # Application entry point
 ```
 
 ## Setup
 
 1. Copy `.env.example` to `.env`.
-2. Fill in `DISCORD_TOKEN`, `CLIENT_ID`, `CLIENT_SECRET`, `REDIRECT_URI`, `MONGO_URI`, and `SESSION_SECRET`.
+2. Fill in required variables:
+   - `DISCORD_TOKEN`, `CLIENT_ID`, `CLIENT_SECRET`, `REDIRECT_URI`
+   - `MONGO_URI`, `SESSION_SECRET`
+   - `PTERO_API_KEY`, `PTERO_SERVER_ID`, `PTERO_PANEL_URL` (for Minecraft features)
 3. (Optional) Set `APP_NAME` and `APP_TAGLINE` to customize public branding.
 4. In the Discord Developer Portal, add `http://localhost:3000/auth/callback` under `OAuth2` redirect URLs for local development.
 5. Invite the bot to your Discord server with `View Channels`, `Send Messages`, and `Embed Links`.

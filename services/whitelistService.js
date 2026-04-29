@@ -120,6 +120,38 @@ async function approveApplication(id, adminId, approvalMessage = null) {
 
   await application.save();
   logger.info(`Application ${id} approved by ${adminId}`);
+
+  // AUTOMATED WHITELISTING: Send command to Pterodactyl
+  try {
+    const apiKey = String(process.env.PTERO_API_KEY || "").trim();
+    const serverId = String(process.env.PTERO_SERVER_ID || "").trim();
+    const panelBase = String(process.env.PTERO_PANEL_URL || "https://panel.wammuhost.com").trim();
+
+    if (apiKey && serverId && application.minecraftUsername) {
+      const url = `${panelBase.replace(/\/+$/, "")}/api/client/servers/${serverId}/command`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({ command: `whitelist add ${application.minecraftUsername}` })
+      });
+
+      if (response.ok) {
+        logger.info(`Successfully whitelisted ${application.minecraftUsername} via Pterodactyl API`);
+      } else {
+        const errorText = await response.text();
+        logger.warn(`Pterodactyl whitelist command failed for ${application.minecraftUsername}: ${response.status} ${errorText}`);
+      }
+    } else {
+      logger.warn("Automated whitelisting skipped: PTERO_API_KEY or PTERO_SERVER_ID missing.");
+    }
+  } catch (apiError) {
+    logger.error(`Error sending whitelist command for ${application.minecraftUsername}:`, apiError);
+  }
+
   return application;
 }
 

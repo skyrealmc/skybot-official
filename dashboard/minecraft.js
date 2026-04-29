@@ -1,6 +1,10 @@
 const state = {
   guilds: [],
-  config: null
+  config: null,
+  charts: {
+    cpu: null,
+    ram: null
+  }
 };
 
 const elements = {
@@ -25,11 +29,14 @@ const elements = {
   actionMessage: document.querySelector("#actionMessage"),
   serverStatusDot: document.querySelector("#serverStatusDot"),
   serverStatusText: document.querySelector("#serverStatusText"),
+  serverState: document.querySelector("#serverState"),
   lastCheckAt: document.querySelector("#lastCheckAt"),
   lastEvent: document.querySelector("#lastEvent"),
   playersOnline: document.querySelector("#playersOnline"),
   lastRestartAt: document.querySelector("#lastRestartAt"),
-  statusError: document.querySelector("#statusError")
+  statusError: document.querySelector("#statusError"),
+  playerList: document.querySelector("#playerList"),
+  playerListCard: document.querySelector("#playerListCard")
 };
 
 async function request(path, options = {}) {
@@ -98,6 +105,94 @@ function applyConfig(config) {
   updateMentionFieldVisibility();
 }
 
+function initCharts() {
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: { display: false },
+      y: {
+        beginAtZero: true,
+        grid: { color: "rgba(255, 255, 255, 0.1)" },
+        ticks: { color: "rgba(255, 255, 255, 0.5)", font: { size: 10 } }
+      }
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: "top",
+        align: "start",
+        labels: { color: "white", boxWidth: 10, font: { size: 11 } }
+      }
+    },
+    elements: {
+      line: { tension: 0.4 },
+      point: { radius: 0 }
+    }
+  };
+
+  state.charts.cpu = new Chart(document.getElementById("cpuChart"), {
+    type: "line",
+    data: {
+      labels: Array(20).fill(""),
+      datasets: [{
+        label: "CPU Usage (%)",
+        data: Array(20).fill(0),
+        borderColor: "#3b82f6",
+        backgroundColor: "rgba(59, 130, 246, 0.1)",
+        fill: true
+      }]
+    },
+    options: chartOptions
+  });
+
+  state.charts.ram = new Chart(document.getElementById("ramChart"), {
+    type: "line",
+    data: {
+      labels: Array(20).fill(""),
+      datasets: [{
+        label: "RAM Usage (MB)",
+        data: Array(20).fill(0),
+        borderColor: "#10b981",
+        backgroundColor: "rgba(16, 185, 129, 0.1)",
+        fill: true
+      }]
+    },
+    options: chartOptions
+  });
+}
+
+function updateCharts(history = []) {
+  if (!history.length) return;
+
+  const labels = history.map(h => new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  const cpuData = history.map(h => h.cpu);
+  const ramData = history.map(h => h.memory);
+
+  state.charts.cpu.data.labels = labels;
+  state.charts.cpu.data.datasets[0].data = cpuData;
+  state.charts.cpu.update("none");
+
+  state.charts.ram.data.labels = labels;
+  state.charts.ram.data.datasets[0].data = ramData;
+  state.charts.ram.update("none");
+}
+
+function renderPlayerList(players = []) {
+  if (!players || players.length === 0) {
+    elements.playerListCard.style.display = "none";
+    return;
+  }
+
+  elements.playerListCard.style.display = "block";
+  elements.playerList.innerHTML = players.map(player => `
+    <div class="player-item">
+      <img class="player-avatar" src="https://mc-heads.net/avatar/${player}/48" alt="${player}" title="${player}">
+      <span class="player-name">${player}</span>
+    </div>
+  `).join("");
+}
+
 function renderStatus(monitor = {}) {
   const online = monitor.online;
   elements.serverStatusDot.classList.remove("online", "offline");
@@ -111,11 +206,15 @@ function renderStatus(monitor = {}) {
     elements.serverStatusText.textContent = "Unknown";
   }
 
+  elements.serverState.textContent = monitor.currentResources?.state || "-";
   elements.lastCheckAt.textContent = formatDate(monitor.lastCheckAt);
   elements.lastEvent.textContent = monitor.lastEvent || "-";
   elements.playersOnline.textContent = monitor.playersOnline ?? "-";
   elements.lastRestartAt.textContent = formatDate(monitor.lastRestartAttemptAt);
   elements.statusError.textContent = monitor.lastError || "";
+
+  renderPlayerList(monitor.playerList);
+  updateCharts(monitor.resourceHistory);
 }
 
 function collectPayload() {
@@ -211,6 +310,7 @@ function bindEvents() {
 
 async function initialize() {
   try {
+    initCharts();
     bindEvents();
     await loadPage();
     setInterval(() => {
