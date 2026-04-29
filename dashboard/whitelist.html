@@ -866,6 +866,7 @@
                                 <button class="btn btn-success" onclick="openApproveModal('${app._id}')">Approve</button>
                                 <button class="btn btn-danger" onclick="quickReject('${app._id}')">Reject</button>
                             ` : ''}
+                            <button class="btn btn-danger" onclick="deleteApplication('${app._id}')" style="background-color: transparent; color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3);">Delete</button>
                         </div>
                     </td>
                 </tr>
@@ -1035,11 +1036,12 @@
             }
         }
 
-        async function deleteApplication() {
-            if (!currentApplicationId || !confirm('Delete this approved application? This action cannot be undone.')) return;
+        async function deleteApplication(id) {
+            const targetId = id || currentApplicationId;
+            if (!targetId || !confirm('Delete this application? This action cannot be undone.')) return;
 
             try {
-                const response = await fetch(`/api/whitelist/${currentApplicationId}`, {
+                const response = await fetch(`/api/whitelist/${targetId}`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include'
@@ -1048,7 +1050,7 @@
                 if (!response.ok) throw new Error('Failed to delete');
 
                 alert('Application deleted successfully');
-                closeApplicationModal();
+                if (currentApplicationId === targetId) closeApplicationModal();
                 loadApplications();
             } catch (error) {
                 console.error('Error:', error);
