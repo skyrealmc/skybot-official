@@ -111,6 +111,9 @@ function callback({ client } = {}) {
         })
       );
 
+      // Store access_token for membership check
+      req.session.access_token = tokenData.access_token;
+      
       req.session.user = {
         id: storedUser.discordId,
         username: storedUser.username,
@@ -180,7 +183,8 @@ function getSession(req, res) {
       avatarUrl: req.session.user.avatarUrl,
       roles: req.session.user.roles || [],
       isGlobalAdmin: req.session.user.isGlobalAdmin || false,
-      accountCapabilities
+      accountCapabilities,
+      isGuildMember: req.session.isGuildMember || false
     },
     guilds: guildAccess,
     bot: botInfo
