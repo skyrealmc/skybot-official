@@ -1,6 +1,6 @@
 # SKY REALM | SKY BOT S2 Dashboard
 
-Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hostable with your own bot credentials while preserving the SKY REALM production setup.
+Full-stack Discord bot, admin dashboard, and API backend for the SKY REALM community. The same backend powers the internal dashboard and the public `skyrealm.fun` whitelist flow.
 
 ## Stack
 
@@ -62,6 +62,7 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 - **Custom Embeds** - Build and customize approval/rejection notifications with real-time previews.
 - **Discord Integration** - Automatically notify users and update the Minecraft server whitelist upon approval.
 - **Stats & Search** - Track application counts and search for specific players by username or email.
+- **Public Website Integration** - Accept whitelist applications from the external website via Discord OAuth session + guild membership gate.
 
 ## Project Structure
 
@@ -78,6 +79,19 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 ├── utils                  # Utility functions
 └── index.js               # Application entry point
 ```
+
+## Website Integration
+
+The public website repo at `skyrealmc.github.io` uses this backend for:
+
+- `GET /auth/login`, `GET /auth/session`, `POST /auth/logout`
+- `POST /api/whitelist/apply`
+
+Cross-origin requests from `https://skyrealm.fun` are allowed through the Express CORS configuration. Public whitelist submissions require:
+
+- valid Discord login session
+- membership in `DISCORD_GUILD_ID`
+- valid Cloudflare Turnstile token
 
 ## Setup
 
@@ -127,7 +141,15 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 ### Whitelist
 - `POST /api/whitelist/apply` - Submit application (Turnstile + Guild Gate required)
 - `GET /api/whitelist/applications` - List applications (Admin only)
+- `GET /api/whitelist/list` - Legacy alias used by the admin dashboard
+- `GET /api/whitelist/:id` - Legacy application detail alias
 - `POST /api/whitelist/applications/:id/approve` - Approve application (Admin only)
+- `POST /api/whitelist/approve/:id` - Legacy approve alias used by the dashboard
+- `POST /api/whitelist/reject/:id` - Legacy reject alias used by the dashboard
+- `DELETE /api/whitelist/:id` - Legacy delete alias used by the dashboard
+- `POST /api/whitelist/:id/resend` - Legacy resend alias used by the dashboard
+- `GET /api/whitelist/config/:guildId` - Get per-guild whitelist notification config
+- `POST /api/whitelist/config/:guildId` - Save per-guild whitelist notification config
 
 ### Messages & Schedules
 - `GET /api/guilds` - List accessible guilds
@@ -146,3 +168,6 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 ### Fixed
 - Fixed session bootstrap flicker and redirect reliability.
 - Improved cross-domain session handling for `skyrealm.fun`.
+- Restored whitelist dashboard API compatibility after route refactor.
+- Fixed whitelist config persistence for rejection templates.
+- Fixed public whitelist auth handling by returning structured `AUTH_REQUIRED` errors.
