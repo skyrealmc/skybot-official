@@ -202,15 +202,19 @@ class MinecraftMonitorService {
   }
 
   async handleConsoleOutput(line) {
-    // Regex for standard Minecraft chat: [12:34:56] [Server thread/INFO]: <Player> Message
-    const chatMatch = line.match(/\[Server thread\/INFO\]: <(.+?)> (.+)/);
+    // Regex for standard Minecraft chat: [Server thread/INFO]: <Player> Message
+    const chatMatch = line.match(/<(.+?)> (.+)/) || line.match(/\[Server thread\/INFO\]: <(.+?)> (.+)/);
     if (chatMatch && this.lastBridgeChannelId) {
       const playerName = chatMatch[1];
       const message = chatMatch[2];
 
+      logger.info(`Chat bridge detected message from ${playerName}: ${message}`);
+
       const channel = await this.client.channels.fetch(this.lastBridgeChannelId).catch(() => null);
       if (channel?.isTextBased()) {
-        await channel.send(`**${playerName}**: ${message}`).catch(() => {});
+        await channel.send(`**${playerName}**: ${message}`).catch(err => {
+          logger.error(`Failed to send bridge message to Discord: ${err.message}`);
+        });
       }
     }
   }
