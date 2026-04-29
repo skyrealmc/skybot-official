@@ -22,15 +22,18 @@ const minecraftConfigSchema = new mongoose.Schema(
     templates: {
       online: {
         title: { type: String, default: "🟢 Server is Online!" },
-        description: { type: String, default: "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!" }
+        description: { type: String, default: "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!" },
+        color: { type: String, default: "#22c55e" }
       },
       offline: {
         title: { type: String, default: "🔴 Server Offline" },
-        description: { type: String, default: "Server is currently offline.\nAuto-recovery system is attempting restart..." }
+        description: { type: String, default: "Server is currently offline.\nAuto-recovery system is attempting restart..." },
+        color: { type: String, default: "#ef4444" }
       },
       restart: {
         title: { type: String, default: "🔁 Server Restarted" },
-        description: { type: String, default: "Server has restarted successfully.\nYou can now join again!" }
+        description: { type: String, default: "Server has restarted successfully.\nYou can now join again!" },
+        color: { type: String, default: "#f59e0b" }
       }
     },
     joinUrl: { type: String, default: "https://skyrealm.fun" },

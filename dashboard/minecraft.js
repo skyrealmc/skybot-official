@@ -20,10 +20,13 @@ const elements = {
   restartGif: document.querySelector("#restartGif"),
   onlineTitle: document.querySelector("#onlineTitle"),
   onlineDesc: document.querySelector("#onlineDesc"),
+  onlineColor: document.querySelector("#onlineColor"),
   offlineTitle: document.querySelector("#offlineTitle"),
   offlineDesc: document.querySelector("#offlineDesc"),
+  offlineColor: document.querySelector("#offlineColor"),
   restartTitle: document.querySelector("#restartTitle"),
   restartDesc: document.querySelector("#restartDesc"),
+  restartColor: document.querySelector("#restartColor"),
   serverAddress: document.querySelector("#serverAddress"),
   joinUrl: document.querySelector("#joinUrl"),
   restartCooldownMs: document.querySelector("#restartCooldownMs"),
@@ -107,16 +110,54 @@ function applyConfig(config) {
 
   elements.onlineTitle.value = config.templates?.online?.title || "";
   elements.onlineDesc.value = config.templates?.online?.description || "";
+  elements.onlineColor.value = config.templates?.online?.color || "#22c55e";
+
   elements.offlineTitle.value = config.templates?.offline?.title || "";
   elements.offlineDesc.value = config.templates?.offline?.description || "";
+  elements.offlineColor.value = config.templates?.offline?.color || "#ef4444";
+
   elements.restartTitle.value = config.templates?.restart?.title || "";
   elements.restartDesc.value = config.templates?.restart?.description || "";
+  elements.restartColor.value = config.templates?.restart?.color || "#f59e0b";
 
   elements.joinUrl.value = config.joinUrl || "https://skyrealm.fun";
   elements.restartCooldownMs.value = Number(config.restartCooldownMs || 120000);
   elements.alertsEnabled.checked = config.alertsEnabled !== false;
   elements.autoRestartEnabled.checked = config.autoRestartEnabled !== false;
   updateMentionFieldVisibility();
+  updateAllPreviews();
+}
+
+function renderEmbedPreview(title, description, color, gif) {
+  return `
+    <div style="background: #2b2d31; border-left: 4px solid ${color}; border-radius: 4px; padding: 12px; font-family: sans-serif; max-width: 100%;">
+      <div style="color: #ffffff; font-weight: 600; font-size: 0.95rem; margin-bottom: 4px;">${title || "Embed Title"}</div>
+      <div style="color: #dbdee1; font-size: 0.85rem; white-space: pre-wrap;">${description || "Embed Description"}</div>
+      ${gif ? `<img src="${gif}" style="max-width: 100%; border-radius: 4px; margin-top: 8px;" />` : ""}
+      <div style="color: #949ba4; font-size: 0.7rem; margin-top: 8px;">Just now</div>
+    </div>
+  `;
+}
+
+function updateAllPreviews() {
+  document.getElementById("onlinePreview").innerHTML = renderEmbedPreview(
+    elements.onlineTitle.value,
+    elements.onlineDesc.value,
+    elements.onlineColor.value,
+    elements.onlineGif.value
+  );
+  document.getElementById("offlinePreview").innerHTML = renderEmbedPreview(
+    elements.offlineTitle.value,
+    elements.offlineDesc.value,
+    elements.offlineColor.value,
+    elements.offlineGif.value
+  );
+  document.getElementById("restartPreview").innerHTML = renderEmbedPreview(
+    elements.restartTitle.value,
+    elements.restartDesc.value,
+    elements.restartColor.value,
+    elements.restartGif.value
+  );
 }
 
 function initCharts() {
@@ -246,15 +287,18 @@ function collectPayload() {
     templates: {
       online: {
         title: elements.onlineTitle.value.trim(),
-        description: elements.onlineDesc.value.trim()
+        description: elements.onlineDesc.value.trim(),
+        color: elements.onlineColor.value
       },
       offline: {
         title: elements.offlineTitle.value.trim(),
-        description: elements.offlineDesc.value.trim()
+        description: elements.offlineDesc.value.trim(),
+        color: elements.offlineColor.value
       },
       restart: {
         title: elements.restartTitle.value.trim(),
-        description: elements.restartDesc.value.trim()
+        description: elements.restartDesc.value.trim(),
+        color: elements.restartColor.value
       }
     },
     joinUrl: elements.joinUrl.value.trim(),
@@ -324,6 +368,16 @@ async function sendTestAlert() {
 }
 
 function bindEvents() {
+  const previewFields = [
+    elements.onlineTitle, elements.onlineDesc, elements.onlineColor, elements.onlineGif,
+    elements.offlineTitle, elements.offlineDesc, elements.offlineColor, elements.offlineGif,
+    elements.restartTitle, elements.restartDesc, elements.restartColor, elements.restartGif
+  ];
+
+  previewFields.forEach(field => {
+    field.addEventListener("input", updateAllPreviews);
+  });
+
   elements.mentionType.addEventListener("change", updateMentionFieldVisibility);
   elements.guildId.addEventListener("change", () => {
     renderChannels(elements.guildId.value, "");

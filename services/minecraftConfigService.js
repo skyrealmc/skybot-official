@@ -18,15 +18,18 @@ function buildEnvDefaults() {
     templates: {
       online: {
         title: "🟢 Server is Online!",
-        description: "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!"
+        description: "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!",
+        color: "#22c55e"
       },
       offline: {
         title: "🔴 Server Offline",
-        description: "Server is currently offline.\nAuto-recovery system is attempting restart..."
+        description: "Server is currently offline.\nAuto-recovery system is attempting restart...",
+        color: "#ef4444"
       },
       restart: {
         title: "🔁 Server Restarted",
-        description: "Server has restarted successfully.\nYou can now join again!"
+        description: "Server has restarted successfully.\nYou can now join again!",
+        color: "#f59e0b"
       }
     },
     joinUrl: "https://skyrealm.fun",
@@ -54,15 +57,18 @@ function normalizeConfig(docOrObject) {
     templates: {
       online: {
         title: raw.templates?.online?.title || "🟢 Server is Online!",
-        description: raw.templates?.online?.description || "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!"
+        description: raw.templates?.online?.description || "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!",
+        color: raw.templates?.online?.color || "#22c55e"
       },
       offline: {
         title: raw.templates?.offline?.title || "🔴 Server Offline!",
-        description: raw.templates?.offline?.description || "Server is currently offline.\nAuto-recovery system is attempting restart..."
+        description: raw.templates?.offline?.description || "Server is currently offline.\nAuto-recovery system is attempting restart...",
+        color: raw.templates?.offline?.color || "#ef4444"
       },
       restart: {
         title: raw.templates?.restart?.title || "🔁 Server Restarted",
-        description: raw.templates?.restart?.description || "Server has restarted successfully.\nYou can now join again!"
+        description: raw.templates?.restart?.description || "Server has restarted successfully.\nYou can now join again!",
+        color: raw.templates?.restart?.color || "#f59e0b"
       }
     },
     joinUrl: raw.joinUrl || "https://skyrealm.fun",
@@ -117,15 +123,18 @@ async function updateMinecraftConfig(updates = {}, updatedBy = "") {
     setValues.templates = {
       online: {
         title: String(updates.templates.online?.title || "🟢 Server is Online!").trim(),
-        description: String(updates.templates.online?.description || "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!").trim()
+        description: String(updates.templates.online?.description || "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!").trim(),
+        color: String(updates.templates.online?.color || "#22c55e").trim()
       },
       offline: {
         title: String(updates.templates.offline?.title || "🔴 Server Offline!").trim(),
-        description: String(updates.templates.offline?.description || "Server is currently offline.\nAuto-recovery system is attempting restart...").trim()
+        description: String(updates.templates.offline?.description || "Server is currently offline.\nAuto-recovery system is attempting restart...").trim(),
+        color: String(updates.templates.offline?.color || "#ef4444").trim()
       },
       restart: {
         title: String(updates.templates.restart?.title || "🔁 Server Restarted").trim(),
-        description: String(updates.templates.restart?.description || "Server has restarted successfully.\nYou can now join again!").trim()
+        description: String(updates.templates.restart?.description || "Server has restarted successfully.\nYou can now join again!").trim(),
+        color: String(updates.templates.restart?.color || "#f59e0b").trim()
       }
     };
   }
