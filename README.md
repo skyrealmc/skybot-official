@@ -97,15 +97,52 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 8. Run the app with `npm run dev` or `npm start`.
 9. Open `http://localhost:3000`.
 
+## Required Discord Setup
+
+- OAuth scopes: `identify`, `guilds`
+- Bot permissions: `Send Messages`, `Embed Links`, `Add Reactions`, `View Channels`
+- User permissions in target guild: `Manage Guild` or `Administrator`
+- Enable `Server Members Intent` in the Discord Developer Portal for advanced features.
+
+## Access Control Model
+
+### Dashboard Roles
+- `Owner` - full access, settings, templates, sending, analytics
+- `Admin` - templates, sending, analytics
+- `Moderator` - sending only
+- `Viewer` - read-only
+
+### Guild Eligibility
+- Dashboard only keeps guilds where the user has `Manage Guild` or `Administrator`.
+- Membership Gate enforces that users must be in the `DISCORD_GUILD_ID` server to use protected APIs.
+
+## API Endpoints
+
+### Authentication
+- `GET /auth/login` - Redirect to Discord OAuth (supports `returnUrl`)
+- `GET /auth/callback` - OAuth callback handler
+- `POST /auth/logout` - End session
+- `GET /auth/session` - Get current session
+
+### Whitelist
+- `POST /api/whitelist/apply` - Submit application (Turnstile + Guild Gate required)
+- `GET /api/whitelist/applications` - List applications (Admin only)
+- `POST /api/whitelist/applications/:id/approve` - Approve application (Admin only)
+
+### Messages & Schedules
+- `GET /api/guilds` - List accessible guilds
+- `POST /api/send-message` - Send a message
+- `GET /api/schedules` - List all schedules
+- `POST /api/schedules` - Create a new schedule
+
 ## Recent Changes (Latest)
 
 ### Added
-- **Guild Membership Gate** - Middleware to enforce Discord server membership for whitelist and dashboard access.
-- **Cloudflare Turnstile Support** - Server-side verification for public endpoints.
-- **Immediate Membership Verification** - Checks status during OAuth callback for better initial load experience.
-- **Enhanced Redirect Support** - Support for `returnUrl` via OAuth `state` parameter for reliable cross-origin redirects.
-- **Message Scheduler System** - Full scheduling engine with cron support.
+- **Guild Membership Gate** - Enforces server membership for whitelist and dashboard access.
+- **Cloudflare Turnstile Support** - Anti-bot protection for whitelist submissions.
+- **Immediate Membership Verification** - Real-time status check during login.
+- **Enhanced Redirect Support** - Support for `returnUrl` via OAuth `state`.
 
 ### Fixed
-- OAuth login flicker during session bootstrap.
-- Reliable session persistence before redirects.
+- Fixed session bootstrap flicker and redirect reliability.
+- Improved cross-domain session handling for `skyrealm.fun`.
