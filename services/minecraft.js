@@ -181,6 +181,10 @@ class MinecraftMonitorService {
 
     const response = await this.fetchServerStatus(config.serverAddress);
     const online = Boolean(response?.online);
+    
+    // Diagnostic logging
+    logger.info(`Status check for ${config.serverAddress}: Online=${online}`);
+    
     const playersOnline = Number(response?.players?.online ?? 0);
     this.playerList = response?.players?.list || [];
 
