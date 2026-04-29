@@ -41,10 +41,14 @@ const elements = {
   messageContent: document.querySelector("#messageContent"),
   templateName: document.querySelector("#templateName"),
   title: document.querySelector("#title"),
+  titleUrl: document.querySelector("#titleUrl"),
   description: document.querySelector("#description"),
   color: document.querySelector("#color"),
   author: document.querySelector("#author"),
+  authorUrl: document.querySelector("#authorUrl"),
+  authorIcon: document.querySelector("#authorIcon"),
   footer: document.querySelector("#footer"),
+  footerIcon: document.querySelector("#footerIcon"),
   image: document.querySelector("#image"),
   thumbnail: document.querySelector("#thumbnail"),
   timestamp: document.querySelector("#timestamp"),
@@ -370,10 +374,14 @@ function initPreviewToggle() {
 function readEmbedData() {
   return {
     title: elements.title.value.trim(),
+    titleUrl: elements.titleUrl ? elements.titleUrl.value.trim() : "",
     description: elements.description.value.trim(),
     color: elements.color.value || "#5865f2",
     author: elements.author.value.trim(),
+    authorUrl: elements.authorUrl ? elements.authorUrl.value.trim() : "",
+    authorIcon: elements.authorIcon ? elements.authorIcon.value.trim() : "",
     footer: elements.footer.value.trim(),
+    footerIcon: elements.footerIcon ? elements.footerIcon.value.trim() : "",
     image: elements.image.value.trim(),
     thumbnail: elements.thumbnail.value.trim(),
     timestamp: elements.timestamp.checked
@@ -481,6 +489,10 @@ function renderBuilderPreview(payload) {
     html += renderButtonsPreview(payload.buttons);
   }
 
+  if (payload.reactions && payload.reactions.length > 0) {
+    html += renderReactionsPreview(payload.reactions);
+  }
+
   html += '</div>';
   elements.previewCard.innerHTML = html;
 }
@@ -510,6 +522,10 @@ function renderDiscordPreview(payload) {
     html += renderButtonsPreview(payload.buttons);
   }
 
+  if (payload.reactions && payload.reactions.length > 0) {
+    html += renderReactionsPreview(payload.reactions);
+  }
+
   html += '</div>';
   elements.previewCard.innerHTML = html;
 }
@@ -518,12 +534,28 @@ function renderEmbedPreview(embedData) {
   const embed = embedData;
   let html = '<div class="preview-embed" style="border-left-color: ' + (embed.color || "#5865f2") + '">';
 
-  if (embed.author) {
-    html += `<div class="preview-author">${escapeHtml(embed.author)}</div>`;
+  if (embed.author || embed.authorIcon) {
+    html += '<div class="preview-author" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">';
+    if (embed.authorIcon) {
+      html += `<img src="${escapeHtml(embed.authorIcon)}" style="width: 24px; height: 24px; border-radius: 50%;" alt="author icon" />`;
+    }
+    if (embed.author) {
+      const authorText = `<span style="font-weight: 600; font-size: 0.9rem;">${escapeHtml(embed.author)}</span>`;
+      if (embed.authorUrl) {
+        html += `<a href="${escapeHtml(embed.authorUrl)}" target="_blank" style="color: white; text-decoration: none;">${authorText}</a>`;
+      } else {
+        html += authorText;
+      }
+    }
+    html += '</div>';
   }
 
   if (embed.title) {
-    html += `<div class="preview-embed-title">${escapeHtml(embed.title)}</div>`;
+    if (embed.titleUrl) {
+      html += `<a href="${escapeHtml(embed.titleUrl)}" target="_blank" style="color: #00a8fc; text-decoration: none; font-weight: 600; font-size: 1rem; margin-bottom: 8px; display: block;">${escapeHtml(embed.title)}</a>`;
+    } else {
+      html += `<div class="preview-embed-title">${escapeHtml(embed.title)}</div>`;
+    }
   }
 
   if (embed.description) {
@@ -540,10 +572,15 @@ function renderEmbedPreview(embedData) {
     html += `<img class="preview-embed-image" src="${escapeHtml(embed.image)}" alt="embed image" />`;
   }
 
-  if (embed.footer || embed.timestamp) {
-    html += '<div class="preview-embed-footer">';
-    if (embed.footer) html += escapeHtml(embed.footer);
-    if (embed.timestamp) html += ' • ' + new Date().toLocaleString();
+  if (embed.footer || embed.footerIcon || embed.timestamp) {
+    html += '<div class="preview-embed-footer" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">';
+    if (embed.footerIcon) {
+      html += `<img src="${escapeHtml(embed.footerIcon)}" style="width: 20px; height: 20px; border-radius: 50%;" alt="footer icon" />`;
+    }
+    let footerText = "";
+    if (embed.footer) footerText += escapeHtml(embed.footer);
+    if (embed.timestamp) footerText += (footerText ? ' • ' : '') + new Date().toLocaleString();
+    html += `<span style="font-size: 0.75rem; color: var(--text-muted);">${footerText}</span>`;
     html += '</div>';
   }
 
@@ -554,10 +591,39 @@ function renderEmbedPreview(embedData) {
 function renderButtonsPreview(buttons) {
   if (!buttons || buttons.length === 0) return "";
 
-  let html = '<div class="preview-buttons">';
-  buttons.filter(b => b.label).forEach(button => {
-    const styleClass = button.type === "link" ? "link" : "";
-    html += `<span class="preview-button ${styleClass}">${escapeHtml(button.emoji || "")} ${escapeHtml(button.label)}</span>`;
+  const styleColors = {
+    Primary: "#5865f2",
+    Secondary: "#4e5058",
+    Success: "#248046",
+    Danger: "#da373c",
+    Link: "#4e5058"
+  };
+
+  let html = '<div class="preview-buttons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding-left: 46px;">';
+  buttons.filter(b => b.label || b.emoji).forEach(button => {
+    const bgColor = styleColors[button.style] || styleColors.Primary;
+    const isLink = button.type === "link";
+    html += `
+      <span class="preview-button" style="background: ${bgColor}; color: white; padding: 6px 16px; border-radius: 4px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: default; transition: opacity 0.2s;">
+        ${button.emoji ? `<span style="font-size: 1.1rem;">${escapeHtml(button.emoji)}</span>` : ""}
+        ${button.label ? `<span>${escapeHtml(button.label)}</span>` : ""}
+        ${isLink ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 4px; opacity: 0.6;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>' : ""}
+      </span>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderReactionsPreview(reactions) {
+  if (!reactions || reactions.length === 0) return "";
+
+  let html = '<div class="preview-reactions" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; padding-left: 46px;">';
+  reactions.forEach(reaction => {
+    html += `
+      <div style="background: rgba(88, 101, 242, 0.15); border: 1px solid #5865f2; border-radius: 4px; padding: 2px 8px; display: flex; align-items: center; gap: 4px; font-size: 0.85rem; cursor: default;">
+        <span>${escapeHtml(reaction)}</span>
+        <span style="color: #5865f2; font-weight: 600; font-size: 0.75rem;">1</span>
+      </div>`;
   });
   html += '</div>';
   return html;
@@ -566,34 +632,35 @@ function renderButtonsPreview(buttons) {
 function renderV2Preview(containers) {
   if (!containers || containers.length === 0) return "";
 
-  let html = '';
+  let html = '<div class="preview-v2" style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">';
 
   containers.forEach(container => {
     container.children.forEach(item => {
       switch (item.type) {
         case "text":
           if (item.content) {
-            html += `<div class="preview-content">${escapeHtml(item.content)}</div>`;
+            html += `<div class="preview-content" style="padding-left: 46px;">${escapeHtml(item.content)}</div>`;
           }
           break;
         case "separator":
-          html += '<div style="border-top: 1px solid rgba(255,255,255,0.06); margin: 8px 0;"></div>';
+          html += '<div style="border-top: 1px solid rgba(255,255,255,0.06); margin: 8px 0; margin-left: 46px;"></div>';
           break;
         case "image":
         case "media":
           if (item.url) {
-            html += `<img class="preview-embed-image" src="${escapeHtml(item.url)}" alt="media" style="max-width: 100%; border-radius: 8px; margin: 8px 0;" />`;
+            html += `<div style="padding-left: 46px;"><img src="${escapeHtml(item.url)}" alt="media" style="max-width: 100%; border-radius: 8px; margin: 4px 0;" /></div>`;
           }
           break;
         case "button":
-          if (item.label) {
-            html += `<span class="preview-button">${escapeHtml(item.emoji || "")} ${escapeHtml(item.label)}</span>`;
+          if (item.label || item.emoji) {
+            html += `<div style="padding-left: 46px;"><span class="preview-button" style="background: #4e5058; color: white; padding: 6px 16px; border-radius: 4px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px;">${item.emoji ? `<span>${escapeHtml(item.emoji)}</span>` : ""} ${item.label ? `<span>${escapeHtml(item.label)}</span>` : ""}</span></div>`;
           }
           break;
       }
     });
   });
 
+  html += '</div>';
   return html;
 }
 
@@ -951,10 +1018,14 @@ function applyTemplate(template) {
   const embed = template.embedData || {};
   elements.templateName.value = template.name || "";
   elements.title.value = embed.title || "";
+  elements.titleUrl.value = embed.titleUrl || "";
   elements.description.value = embed.description || "";
   elements.color.value = embed.color || "#5865f2";
   elements.author.value = embed.author || "";
+  elements.authorUrl.value = embed.authorUrl || "";
+  elements.authorIcon.value = embed.authorIcon || "";
   elements.footer.value = embed.footer || "";
+  elements.footerIcon.value = embed.footerIcon || "";
   elements.image.value = embed.image || "";
   elements.thumbnail.value = embed.thumbnail || "";
   elements.timestamp.checked = Boolean(embed.timestamp);
@@ -1266,10 +1337,14 @@ async function initialize() {
   const embedFields = [
     elements.messageContent,
     elements.title,
+    elements.titleUrl,
     elements.description,
     elements.color,
     elements.author,
+    elements.authorUrl,
+    elements.authorIcon,
     elements.footer,
+    elements.footerIcon,
     elements.image,
     elements.thumbnail,
     elements.timestamp
@@ -1281,6 +1356,11 @@ async function initialize() {
       input.addEventListener("change", debouncedPreview);
     }
   });
+
+  // Reactions input change
+  if (elements.reactionsInput) {
+    elements.reactionsInput.addEventListener("input", debouncedPreview);
+  }
 
   // Message type change
   if (elements.messageType) {

@@ -15,6 +15,20 @@ function buildEnvDefaults() {
       offline: "",
       restart: ""
     },
+    templates: {
+      online: {
+        title: "🟢 Server is Online!",
+        description: "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!"
+      },
+      offline: {
+        title: "🔴 Server Offline",
+        description: "Server is currently offline.\nAuto-recovery system is attempting restart..."
+      },
+      restart: {
+        title: "🔁 Server Restarted",
+        description: "Server has restarted successfully.\nYou can now join again!"
+      }
+    },
     joinUrl: "https://skyrealm.fun",
     autoRestartEnabled: true,
     restartCooldownMs: 120000
@@ -36,6 +50,20 @@ function normalizeConfig(docOrObject) {
       online: raw.gifs?.online || "",
       offline: raw.gifs?.offline || "",
       restart: raw.gifs?.restart || ""
+    },
+    templates: {
+      online: {
+        title: raw.templates?.online?.title || "🟢 Server is Online!",
+        description: raw.templates?.online?.description || "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!"
+      },
+      offline: {
+        title: raw.templates?.offline?.title || "🔴 Server Offline!",
+        description: raw.templates?.offline?.description || "Server is currently offline.\nAuto-recovery system is attempting restart..."
+      },
+      restart: {
+        title: raw.templates?.restart?.title || "🔁 Server Restarted",
+        description: raw.templates?.restart?.description || "Server has restarted successfully.\nYou can now join again!"
+      }
     },
     joinUrl: raw.joinUrl || "https://skyrealm.fun",
     autoRestartEnabled: raw.autoRestartEnabled !== false,
@@ -83,6 +111,22 @@ async function updateMinecraftConfig(updates = {}, updatedBy = "") {
       online: String(updates.gifs.online || "").trim(),
       offline: String(updates.gifs.offline || "").trim(),
       restart: String(updates.gifs.restart || "").trim()
+    };
+  }
+  if (updates.templates && typeof updates.templates === "object") {
+    setValues.templates = {
+      online: {
+        title: String(updates.templates.online?.title || "🟢 Server is Online!").trim(),
+        description: String(updates.templates.online?.description || "Sky Realm SMP is now LIVE 🚀\n\nClick below to join now!").trim()
+      },
+      offline: {
+        title: String(updates.templates.offline?.title || "🔴 Server Offline!").trim(),
+        description: String(updates.templates.offline?.description || "Server is currently offline.\nAuto-recovery system is attempting restart...").trim()
+      },
+      restart: {
+        title: String(updates.templates.restart?.title || "🔁 Server Restarted").trim(),
+        description: String(updates.templates.restart?.description || "Server has restarted successfully.\nYou can now join again!").trim()
+      }
     };
   }
   if (updates.joinUrl !== undefined) {

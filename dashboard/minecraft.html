@@ -250,7 +250,7 @@
           </section>
 
           <section class="minecraft-card">
-            <h2>Alert Templates</h2>
+            <h2>Alert Templates (GIFs)</h2>
             <div class="field">
               <label for="onlineGif">Online GIF URL</label>
               <input id="onlineGif" type="url" placeholder="https://..." />
@@ -262,6 +262,30 @@
             <div class="field">
               <label for="restartGif">Restart GIF URL</label>
               <input id="restartGif" type="url" placeholder="https://..." />
+            </div>
+          </section>
+
+          <section class="minecraft-card full-width">
+            <h2>Embed Message Templates</h2>
+            <div class="minecraft-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
+              <div class="field">
+                <label>Online Title</label>
+                <input id="onlineTitle" type="text" placeholder="🟢 Server is Online!" />
+                <label style="margin-top: 8px;">Online Description</label>
+                <textarea id="onlineDesc" rows="3" placeholder="Server is LIVE..."></textarea>
+              </div>
+              <div class="field">
+                <label>Offline Title</label>
+                <input id="offlineTitle" type="text" placeholder="🔴 Server Offline" />
+                <label style="margin-top: 8px;">Offline Description</label>
+                <textarea id="offlineDesc" rows="3" placeholder="Server is currently offline..."></textarea>
+              </div>
+              <div class="field">
+                <label>Restart Title</label>
+                <input id="restartTitle" type="text" placeholder="🔁 Server Restarted" />
+                <label style="margin-top: 8px;">Restart Description</label>
+                <textarea id="restartDesc" rows="3" placeholder="Server has restarted..."></textarea>
+              </div>
             </div>
           </section>
 

@@ -223,7 +223,12 @@ class MinecraftMonitorService {
     if (!this.client?.isReady || !this.client.isReady()) return false;
     if (!config.channelId) return false;
 
-    const template = EVENT_TEMPLATES[eventType] || EVENT_TEMPLATES.online;
+    // Use custom templates if available, otherwise fallback to hardcoded
+    const customTemplate = config.templates?.[eventType];
+    const template = customTemplate && customTemplate.title 
+      ? customTemplate 
+      : (EVENT_TEMPLATES[eventType] || EVENT_TEMPLATES.online);
+
     const imageUrl = config.gifs?.[eventType] || "";
     const mention = getMentionText(config);
 

@@ -18,6 +18,12 @@ const elements = {
   onlineGif: document.querySelector("#onlineGif"),
   offlineGif: document.querySelector("#offlineGif"),
   restartGif: document.querySelector("#restartGif"),
+  onlineTitle: document.querySelector("#onlineTitle"),
+  onlineDesc: document.querySelector("#onlineDesc"),
+  offlineTitle: document.querySelector("#offlineTitle"),
+  offlineDesc: document.querySelector("#offlineDesc"),
+  restartTitle: document.querySelector("#restartTitle"),
+  restartDesc: document.querySelector("#restartDesc"),
   serverAddress: document.querySelector("#serverAddress"),
   joinUrl: document.querySelector("#joinUrl"),
   restartCooldownMs: document.querySelector("#restartCooldownMs"),
@@ -98,6 +104,14 @@ function applyConfig(config) {
   elements.onlineGif.value = config.gifs?.online || "";
   elements.offlineGif.value = config.gifs?.offline || "";
   elements.restartGif.value = config.gifs?.restart || "";
+
+  elements.onlineTitle.value = config.templates?.online?.title || "";
+  elements.onlineDesc.value = config.templates?.online?.description || "";
+  elements.offlineTitle.value = config.templates?.offline?.title || "";
+  elements.offlineDesc.value = config.templates?.offline?.description || "";
+  elements.restartTitle.value = config.templates?.restart?.title || "";
+  elements.restartDesc.value = config.templates?.restart?.description || "";
+
   elements.joinUrl.value = config.joinUrl || "https://skyrealm.fun";
   elements.restartCooldownMs.value = Number(config.restartCooldownMs || 120000);
   elements.alertsEnabled.checked = config.alertsEnabled !== false;
@@ -228,6 +242,20 @@ function collectPayload() {
       online: elements.onlineGif.value.trim(),
       offline: elements.offlineGif.value.trim(),
       restart: elements.restartGif.value.trim()
+    },
+    templates: {
+      online: {
+        title: elements.onlineTitle.value.trim(),
+        description: elements.onlineDesc.value.trim()
+      },
+      offline: {
+        title: elements.offlineTitle.value.trim(),
+        description: elements.offlineDesc.value.trim()
+      },
+      restart: {
+        title: elements.restartTitle.value.trim(),
+        description: elements.restartDesc.value.trim()
+      }
     },
     joinUrl: elements.joinUrl.value.trim(),
     restartCooldownMs: Number(elements.restartCooldownMs.value || 120000),
