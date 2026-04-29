@@ -14,6 +14,8 @@ const {
 } = require("../services/permissionService");
 const logger = require("../utils/logger");
 
+const TARGET_GUILD_ID = process.env.DISCORD_GUILD_ID;
+
 function buildAvatarUrl(user) {
   if (!user.avatar) {
     const fallbackIndex = Number(user.discriminator || 0) % 5;
@@ -111,8 +113,13 @@ function callback({ client } = {}) {
         })
       );
 
+      // Membership Check
+      const isMember = guilds.some(g => g.id === TARGET_GUILD_ID);
+
       // Store access_token for membership check
       req.session.access_token = tokenData.access_token;
+      req.session.isGuildMember = isMember;
+      req.session.guildMemberCheckedAt = Date.now();
       
       req.session.user = {
         id: storedUser.discordId,
