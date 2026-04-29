@@ -298,41 +298,41 @@ class MinecraftMonitorService {
       resourceHistory: this.resourceHistory
     };
   }
-async checkStatus(providedConfig = null) {
-  const config = providedConfig || await getMinecraftConfig();
-  if (!config.serverAddress) {
-    this.lastError = "MC_SERVER_ADDRESS is not configured.";
-    this.lastCheckAt = new Date();
-    return this.getStatus();
-  }
 
-  const response = await this.fetchServerStatus(config.serverAddress);
-  const online = Boolean(response?.online);
-  const playersOnline = Number(response?.players?.online ?? 0);
-  this.playerList = response?.players?.list || [];
-
-  const previousOnline = this.lastKnownOnline;
-  const previousPlayerCount = this.lastPlayersOnline;
-
-  this.lastKnownOnline = online;
-  this.lastPlayersOnline = Number.isFinite(playersOnline) ? playersOnline : null;
-  this.lastCheckAt = new Date();
-  this.lastError = "";
-
-  // AUTO-CLEANUP LOGIC
-  // Transition from >0 players to 0 players
-  if (config.chatBridgeEnabled && config.chatBridgeChannelId) {
-    if (previousPlayerCount > 0 && playersOnline === 0) {
-      this.purgeBridgeChannel(config.chatBridgeChannelId);
+  async checkStatus(providedConfig = null) {
+    const config = providedConfig || await getMinecraftConfig();
+    if (!config.serverAddress) {
+      this.lastError = "MC_SERVER_ADDRESS is not configured.";
+      this.lastCheckAt = new Date();
+      return this.getStatus();
     }
-  }
 
-  if (previousOnline === null) {
-    return this.getStatus();
-  }
+    const response = await this.fetchServerStatus(config.serverAddress);
+    const online = Boolean(response?.online);
+    const playersOnline = Number(response?.players?.online ?? 0);
+    this.playerList = response?.players?.list || [];
 
-  if (previousOnline !== online) {
-...
+    const previousOnline = this.lastKnownOnline;
+    const previousPlayerCount = this.lastPlayersOnline;
+
+    this.lastKnownOnline = online;
+    this.lastPlayersOnline = Number.isFinite(playersOnline) ? playersOnline : null;
+    this.lastCheckAt = new Date();
+    this.lastError = "";
+
+    // AUTO-CLEANUP LOGIC
+    // Transition from >0 players to 0 players
+    if (config.chatBridgeEnabled && config.chatBridgeChannelId) {
+      if (previousPlayerCount > 0 && playersOnline === 0) {
+        this.purgeBridgeChannel(config.chatBridgeChannelId);
+      }
+    }
+
+    if (previousOnline === null) {
+      return this.getStatus();
+    }
+
+    if (previousOnline !== online) {
       this.lastTransitionAt = new Date();
       if (online) {
         await this.sendAlert("restart", config);
@@ -384,8 +384,8 @@ async checkStatus(providedConfig = null) {
     const embed = new EmbedBuilder()
       .setTitle(template.title)
       .setDescription(template.description)
-      .setColor(template.color)
-      .setFooter({ text: template.footer })
+      .setColor(template.color || (eventType === "online" ? "#22c55e" : eventType === "offline" ? "#ef4444" : "#f59e0b"))
+      .setFooter({ text: "Sky Realm SMP" })
       .setTimestamp(new Date());
 
     if (imageUrl) {
