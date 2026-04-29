@@ -17,24 +17,30 @@ async function getWhitelistConfig(guildId) {
 /**
  * Save or update whitelist config for a guild
  */
-async function saveWhitelistConfig(guildId, adminId, configData) {
+async function saveWhitelistConfig(guildId, configData, adminId = null) {
   try {
-    const { channelId, embedTemplate, roleId } = configData;
+    const { channelId, embedTemplate, rejectionTemplate, roleId } = configData;
 
     if (!channelId) {
       throw new Error("Channel ID is required");
     }
 
+    const update = {
+      guildId,
+      channelId,
+      embedTemplate: embedTemplate || {},
+      rejectionTemplate: rejectionTemplate || {},
+      roleId,
+      updatedAt: new Date()
+    };
+
+    if (adminId) {
+      update.adminId = adminId;
+    }
+
     const config = await WhitelistConfig.findOneAndUpdate(
       { guildId },
-      {
-        guildId,
-        adminId,
-        channelId,
-        embedTemplate: embedTemplate || {},
-        roleId,
-        updatedAt: new Date()
-      },
+      update,
       { upsert: true, new: true }
     );
 

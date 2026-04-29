@@ -394,7 +394,7 @@ async function saveWhitelistConfigEndpoint(req, res) {
       roleId,
       embedTemplate,
       rejectionTemplate
-    });
+    }, adminId);
 
     res.json({
       success: true,

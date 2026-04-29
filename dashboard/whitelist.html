@@ -796,12 +796,62 @@
         let currentApplicationId = null;
         let currentFilter = '';
         let lastSelectedGuild = null;
+        let currentSession = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadApplications();
+        async function request(path, options = {}) {
+            const response = await fetch(path, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                },
+                ...options
+            });
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload.error || payload.message || `Request failed: ${response.status}`);
+            }
+
+            return response.json();
+        }
+
+        function showApplicationsError(message) {
+            document.getElementById('applicationsTableBody').innerHTML =
+                `<tr><td colspan="7" class="empty-state" style="color: var(--danger);">${escapeHtml(message)}</td></tr>`;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             setupEventListeners();
             initializeEmbedCustomizer();
+            await initializeWhitelistDashboard();
         });
+
+        async function initializeWhitelistDashboard() {
+            try {
+                currentSession = await request('/auth/session');
+
+                if (!currentSession.authenticated) {
+                    window.location.href = './index.html';
+                    return;
+                }
+
+                const accountCapabilities = currentSession.user?.accountCapabilities || {};
+                if (!accountCapabilities.manage_settings && !accountCapabilities.full_access) {
+                    showApplicationsError('You do not have permission to manage whitelist applications.');
+                    return;
+                }
+
+                await loadApplications();
+            } catch (error) {
+                console.error('Failed to initialize whitelist dashboard:', error);
+                if (/401|403|authenticated|permission/i.test(error.message)) {
+                    showApplicationsError(error.message);
+                    return;
+                }
+                showApplicationsError('Failed to initialize whitelist dashboard');
+            }
+        }
 
         function setupEventListeners() {
             document.querySelectorAll('.whitelist-filter-btn').forEach(btn => {
@@ -828,18 +878,12 @@
                     ? `/api/whitelist/list?status=${currentFilter}`
                     : '/api/whitelist/list';
 
-                const response = await fetch(url, {
-                    credentials: 'include'
-                });
-                if (!response.ok) throw new Error('Failed to load applications');
-
-                const data = await response.json();
+                const data = await request(url);
                 displayApplications(data.applications || []);
                 updateStats(data.applications || []);
             } catch (error) {
                 console.error('Error loading applications:', error);
-                document.getElementById('applicationsTableBody').innerHTML =
-                    '<tr><td colspan="7" class="empty-state" style="color: var(--danger);">Failed to load applications</td></tr>';
+                showApplicationsError(error.message || 'Failed to load applications');
             }
         }
 
@@ -891,12 +935,7 @@
 
         async function viewApplication(id) {
             try {
-                const response = await fetch(`/api/whitelist/${id}`, {
-                    credentials: 'include'
-                });
-                if (!response.ok) throw new Error('Failed to load application');
-
-                const data = await response.json();
+                const data = await request(`/api/whitelist/${id}`);
                 const app = data.application;
 
                 currentApplicationId = id;
@@ -983,22 +1022,16 @@
                     return;
                 }
 
-                const response = await fetch(`/api/whitelist/approve/${currentApplicationId}`, {
+                const data = await request(`/api/whitelist/approve/${currentApplicationId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
                     body: JSON.stringify({ notificationGuildId: guildId, notificationChannelId: channelId })
                 });
-
-                if (!response.ok) throw new Error('Failed to approve');
-
-                const data = await response.json();
                 alert(`✅ Application approved!${data.notificationSent ? ' Notification sent to Discord.' : ''}`);
                 closeApplicationModal();
                 loadApplications();
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to approve application');
+                alert(error.message || 'Failed to approve application');
             }
         }
 
@@ -1017,22 +1050,16 @@
                     return;
                 }
 
-                const response = await fetch(`/api/whitelist/reject/${currentApplicationId}`, {
+                const data = await request(`/api/whitelist/reject/${currentApplicationId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
                     body: JSON.stringify({ notificationGuildId: guildId, notificationChannelId: channelId })
                 });
-
-                if (!response.ok) throw new Error('Failed to reject');
-
-                const data = await response.json();
                 alert(data.notificationSent ? 'Application rejected and notification sent' : 'Application rejected');
                 closeApplicationModal();
                 loadApplications();
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to reject application');
+                alert(error.message || 'Failed to reject application');
             }
         }
 
@@ -1041,20 +1068,14 @@
             if (!targetId || !confirm('Delete this application? This action cannot be undone.')) return;
 
             try {
-                const response = await fetch(`/api/whitelist/${targetId}`, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                });
-
-                if (!response.ok) throw new Error('Failed to delete');
+                await request(`/api/whitelist/${targetId}`, { method: 'DELETE' });
 
                 alert('Application deleted successfully');
                 if (currentApplicationId === targetId) closeApplicationModal();
                 loadApplications();
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to delete application');
+                alert(error.message || 'Failed to delete application');
             }
         }
 
@@ -1078,18 +1099,10 @@
             }
 
             try {
-                const response = await fetch(`/api/whitelist/${currentApplicationId}/resend`, {
+                await request(`/api/whitelist/${currentApplicationId}/resend`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notificationGuildId, notificationChannelId }),
-                    credentials: 'include'
+                    body: JSON.stringify({ notificationGuildId, notificationChannelId })
                 });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to resend notification');
-                }
 
                 alert('Notification resent successfully!');
                 closeApplicationModal();
@@ -1220,8 +1233,7 @@
 
         async function loadGuilds() {
             try {
-                const response = await fetch('/api/guilds', { credentials: 'include' });
-                const guilds = await response.json();
+                const guilds = await request('/api/guilds');
 
                 const select = document.getElementById('embedGuildSelect');
                 select.innerHTML = '<option value="">Select a server...</option>';
@@ -1243,8 +1255,7 @@
 
         async function loadGuildsRejected() {
             try {
-                const response = await fetch('/api/guilds', { credentials: 'include' });
-                const guilds = await response.json();
+                const guilds = await request('/api/guilds');
 
                 const select = document.getElementById('embedGuildSelectRejected');
                 select.innerHTML = '<option value="">Select a server...</option>';
@@ -1272,8 +1283,7 @@
             }
 
             try {
-                const response = await fetch(`/api/channels/${guildId}`, { credentials: 'include' });
-                const channels = await response.json();
+                const channels = await request(`/api/channels/${guildId}`);
 
                 const select = document.getElementById('embedChannelSelect');
                 select.innerHTML = '<option value="">Select a channel...</option>';
@@ -1299,8 +1309,7 @@
             }
 
             try {
-                const response = await fetch(`/api/channels/${guildId}`, { credentials: 'include' });
-                const channels = await response.json();
+                const channels = await request(`/api/channels/${guildId}`);
 
                 const select = document.getElementById('embedChannelSelectRejected');
                 select.innerHTML = '<option value="">Select a channel...</option>';
@@ -1323,8 +1332,7 @@
             if (!guildId) return;
 
             try {
-                const response = await fetch(`/api/whitelist/config/${guildId}`, { credentials: 'include' });
-                const data = await response.json();
+                const data = await request(`/api/whitelist/config/${guildId}`);
 
                 if (data.config && data.config.embedTemplate) {
                     const template = data.config.embedTemplate;
@@ -1352,8 +1360,7 @@
             if (!guildId) return;
 
             try {
-                const response = await fetch(`/api/whitelist/config/${guildId}`, { credentials: 'include' });
-                const data = await response.json();
+                const data = await request(`/api/whitelist/config/${guildId}`);
 
                 if (data.config && data.config.rejectionTemplate) {
                     const template = data.config.rejectionTemplate;
@@ -1517,19 +1524,15 @@
                     rejectionTemplate: embedTemplate
                 };
 
-                const response = await fetch(`/api/whitelist/config/${guildId}`, {
+                await request(`/api/whitelist/config/${guildId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
                     body: JSON.stringify(payload)
                 });
-
-                if (!response.ok) throw new Error('Failed to save');
 
                 alert(isApproved ? 'Approved template saved!' : 'Rejection template saved!');
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to save template');
+                alert(error.message || 'Failed to save template');
             }
         }
 

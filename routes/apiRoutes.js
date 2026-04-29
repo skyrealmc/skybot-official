@@ -125,8 +125,17 @@ function createApiRouter({ client }) {
   router.patch("/guild-config/:guildId", requireAccountCapability("manage_settings"), updateGuildCommandConfig);
 
   // Whitelist management
-  router.get("/whitelist/config", requireAccountCapability("manage_settings"), getWhitelistConfigEndpoint);
-  router.patch("/whitelist/config", requireAccountCapability("manage_settings"), saveWhitelistConfigEndpoint);
+  // Keep both the legacy routes used by the dashboard page and the newer
+  // applications-based aliases so existing deployments do not break.
+  router.get("/whitelist/list", requireAccountCapability("manage_settings"), listApplications);
+  router.get("/whitelist/:id", requireAccountCapability("manage_settings"), getApplication);
+  router.post("/whitelist/approve/:id", requireAccountCapability("manage_settings"), approveApplicationEndpoint);
+  router.post("/whitelist/reject/:id", requireAccountCapability("manage_settings"), rejectApplicationEndpoint);
+  router.delete("/whitelist/:id", requireAccountCapability("manage_settings"), deleteApplicationEndpoint);
+  router.post("/whitelist/:id/resend", requireAccountCapability("manage_settings"), resendApplicationNotification);
+  router.get("/whitelist/config/:guildId", requireAccountCapability("manage_settings"), getWhitelistConfigEndpoint);
+  router.post("/whitelist/config/:guildId", requireAccountCapability("manage_settings"), saveWhitelistConfigEndpoint);
+
   router.get("/whitelist/applications", requireAccountCapability("manage_settings"), listApplications);
   router.get("/whitelist/applications/:id", requireAccountCapability("manage_settings"), getApplication);
   router.post("/whitelist/applications/:id/approve", requireAccountCapability("manage_settings"), approveApplicationEndpoint);
