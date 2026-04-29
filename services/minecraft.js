@@ -1,5 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require("discord.js");
-const WebSocket = require("ws");
+const axios = require("axios");
 const logger = require("../utils/logger");
 const {
   getMinecraftConfig,
@@ -46,13 +46,6 @@ class MinecraftMonitorService {
     this.currentResources = { cpu: 0, memory: 0, disk: 0, state: "unknown" };
     this.bootstrapTimer = null;
     this.bootstrapChecksRemaining = 0;
-
-    // Chat Bridge State
-    this.ws = null;
-    this.wsUrl = null;
-    this.wsToken = null;
-    this.reconnectTimer = null;
-    this.lastBridgeChannelId = null;
   }
 
   async fetchResources() {
@@ -64,35 +57,40 @@ class MinecraftMonitorService {
 
     try {
       const url = `${panelBase.replace(/\/+$/, "")}/api/client/servers/${serverId}/resources`;
-      const response = await fetch(url, {
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          Accept: "application/json"
-        }
+          Accept: "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+          Referer: panelBase
+        },
+        timeout: 10000
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const resources = data.attributes.resources;
-        this.currentResources = {
-          cpu: resources.cpu_absolute,
-          memory: resources.memory_bytes,
-          disk: resources.disk_bytes,
-          state: data.attributes.current_state
-        };
+      const resources = response.data.attributes.resources;
+      this.currentResources = {
+        cpu: resources.cpu_absolute,
+        memory: resources.memory_bytes,
+        disk: resources.disk_bytes,
+        state: response.data.attributes.current_state
+      };
 
-        this.resourceHistory.push({
-          timestamp: new Date(),
-          cpu: resources.cpu_absolute,
-          memory: resources.memory_bytes / (1024 * 1024)
-        });
+      this.resourceHistory.push({
+        timestamp: new Date(),
+        cpu: resources.cpu_absolute,
+        memory: resources.memory_bytes / (1024 * 1024)
+      });
 
-        if (this.resourceHistory.length > this.maxHistory) {
-          this.resourceHistory.shift();
-        }
+      if (this.resourceHistory.length > this.maxHistory) {
+        this.resourceHistory.shift();
       }
     } catch (error) {
-      logger.warn(`Failed to fetch Minecraft resources: ${error.message}`);
+      const status = error.response?.status;
+      const data = error.response?.data;
+      logger.warn(`Failed to fetch Minecraft resources: status ${status || "unknown"}: ${typeof data === "string" ? data.substring(0, 100) : "Check logs"}`);
     }
   }
 
@@ -104,10 +102,6 @@ class MinecraftMonitorService {
     await this.checkStatus(config);
     await this.fetchResources().catch(() => {});
 
-    if (config.chatBridgeEnabled) {
-      this.initChatBridge(config).catch(err => logger.error("Chat bridge init failed:", err));
-    }
-
     this.startBootstrapBurst();
     this.timer = setInterval(async () => {
       const currentConfig = await getMinecraftConfig();
@@ -116,13 +110,6 @@ class MinecraftMonitorService {
         logger.warn(`Minecraft monitor check failed: ${error.message}`);
       });
       this.fetchResources().catch(() => {});
-
-      // Keep bridge in sync with config
-      if (currentConfig.chatBridgeEnabled && !this.ws) {
-        this.initChatBridge(currentConfig).catch(() => {});
-      } else if (!currentConfig.chatBridgeEnabled && this.ws) {
-        this.stopChatBridge();
-      }
     }, this.intervalMs);
 
     logger.info("Minecraft monitoring service started");
@@ -137,130 +124,9 @@ class MinecraftMonitorService {
       clearInterval(this.bootstrapTimer);
       this.bootstrapTimer = null;
     }
-    this.stopChatBridge();
     this.bootstrapChecksRemaining = 0;
     this.isRunning = false;
     logger.info("Minecraft monitoring service stopped");
-  }
-
-  async initChatBridge(config) {
-    if (!config.chatBridgeEnabled || !config.chatBridgeChannelId) return;
-
-    const apiKey = String(process.env.PTERO_API_KEY || "").trim();
-    const serverId = String(process.env.PTERO_SERVER_ID || "").trim();
-    const panelBase = String(process.env.PTERO_PANEL_URL || "https://panel.wammuhost.com").trim();
-
-    if (!apiKey || !serverId) return;
-
-    try {
-      const url = `${panelBase.replace(/\/+$/, "")}/api/client/servers/${serverId}/websocket`;
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }
-      });
-
-      if (!response.ok) throw new Error(`Auth failed: ${response.status}`);
-      const data = await response.json();
-
-      this.wsUrl = data.data.socket;
-      this.wsToken = data.data.token;
-      this.lastBridgeChannelId = config.chatBridgeChannelId;
-
-      this.connectWebSocket();
-    } catch (err) {
-      logger.error("Failed to get Pterodactyl WebSocket auth:", err);
-      this.reconnectChatBridge();
-    }
-  }
-
-  connectWebSocket() {
-    if (this.ws) this.ws.close();
-
-    this.ws = new WebSocket(this.wsUrl, { origin: String(process.env.PTERO_PANEL_URL || "") });
-
-    this.ws.on("open", () => {
-      this.ws.send(JSON.stringify({ event: "auth", args: [this.wsToken] }));
-      logger.info("Minecraft Chat Bridge connected to Pterodactyl");
-    });
-
-    this.ws.on("message", (data) => {
-      try {
-        const msg = JSON.parse(data.toString());
-        if (msg.event === "console output") {
-          this.handleConsoleOutput(msg.args[0]);
-        }
-      } catch (e) {}
-    });
-
-    this.ws.on("close", () => {
-      this.ws = null;
-      if (this.isRunning) this.reconnectChatBridge();
-    });
-
-    this.ws.on("error", (err) => {
-      logger.warn("Chat bridge WebSocket error:", err.message);
-    });
-  }
-
-  async handleConsoleOutput(line) {
-    // Regex for standard Minecraft chat: [Server thread/INFO]: <Player> Message
-    const chatMatch = line.match(/<(.+?)> (.+)/) || line.match(/\[Server thread\/INFO\]: <(.+?)> (.+)/);
-    if (chatMatch && this.lastBridgeChannelId) {
-      const playerName = chatMatch[1];
-      const message = chatMatch[2];
-
-      logger.info(`Chat bridge detected message from ${playerName}: ${message}`);
-
-      const channel = await this.client.channels.fetch(this.lastBridgeChannelId).catch(() => null);
-      if (channel?.isTextBased()) {
-        await channel.send(`**${playerName}**: ${message}`).catch(err => {
-          logger.error(`Failed to send bridge message to Discord: ${err.message}`);
-        });
-      }
-    }
-  }
-
-  reconnectChatBridge() {
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = setTimeout(async () => {
-      const config = await getMinecraftConfig();
-      this.initChatBridge(config);
-    }, 10000);
-  }
-
-  stopChatBridge() {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-  }
-
-  async purgeBridgeChannel(channelId) {
-    if (!channelId) return;
-    try {
-      const channel = await this.client.channels.fetch(channelId).catch(() => null);
-      if (channel?.isTextBased()) {
-        logger.info(`Purging bridge channel ${channelId} (server is empty)`);
-
-        let deleted;
-        do {
-          deleted = await channel.bulkDelete(100, true).catch(() => new Map());
-        } while (deleted?.size > 0);
-
-        // Handle older messages manually if bulkDelete stops
-        const remaining = await channel.messages.fetch({ limit: 50 }).catch(() => new Map());
-        if (remaining.size > 0) {
-          for (const msg of remaining.values()) {
-            await msg.delete().catch(() => {});
-          }
-        }
-      }
-    } catch (err) {
-      logger.error(`Failed to purge bridge channel ${channelId}:`, err);
-    }
   }
 
   startBootstrapBurst() {
@@ -289,7 +155,6 @@ class MinecraftMonitorService {
   getStatus() {
     return {
       isRunning: this.isRunning,
-      intervalMs: this.intervalMs,
       online: this.lastKnownOnline,
       lastCheckAt: this.lastCheckAt,
       lastTransitionAt: this.lastTransitionAt,
@@ -317,20 +182,11 @@ class MinecraftMonitorService {
     this.playerList = response?.players?.list || [];
 
     const previousOnline = this.lastKnownOnline;
-    const previousPlayerCount = this.lastPlayersOnline;
-
+    
     this.lastKnownOnline = online;
     this.lastPlayersOnline = Number.isFinite(playersOnline) ? playersOnline : null;
     this.lastCheckAt = new Date();
     this.lastError = "";
-
-    // AUTO-CLEANUP LOGIC
-    // Transition from >0 players to 0 players
-    if (config.chatBridgeEnabled && config.chatBridgeChannelId) {
-      if (previousPlayerCount > 0 && playersOnline === 0) {
-        this.purgeBridgeChannel(config.chatBridgeChannelId);
-      }
-    }
 
     if (previousOnline === null) {
       return this.getStatus();
@@ -439,22 +295,19 @@ class MinecraftMonitorService {
     }
 
     const url = `${panelBase.replace(/\/+$/, "")}/api/client/servers/${serverId}/power`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      },
-      body: JSON.stringify({ signal: "restart" })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Auto-restart failed (${response.status})`);
+    try {
+      await axios.post(url, { signal: "restart" }, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+        }
+      });
+      this.lastRestartAttemptAt = new Date();
+      logger.info("Minecraft auto-restart signal sent successfully");
+    } catch (err) {
+      logger.warn(`Auto-restart failed: ${err.message}`);
     }
-
-    this.lastRestartAttemptAt = new Date();
-    logger.info("Minecraft auto-restart signal sent successfully");
   }
 }
 
