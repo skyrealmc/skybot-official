@@ -88,9 +88,12 @@ class MinecraftMonitorService {
         this.resourceHistory.shift();
       }
     } catch (error) {
+      // Silenced error logging to prevent Cloudflare 403 spam
+      /*
       const status = error.response?.status;
       const data = error.response?.data;
       logger.warn(`Failed to fetch Minecraft resources: status ${status || "unknown"}: ${typeof data === "string" ? data.substring(0, 100) : "Check logs"}`);
+      */
     }
   }
 
@@ -100,7 +103,7 @@ class MinecraftMonitorService {
 
     const config = await getMinecraftConfig();
     await this.checkStatus(config);
-    await this.fetchResources().catch(() => {});
+    // await this.fetchResources().catch(() => {}); // Disabled due to Cloudflare 403
 
     this.startBootstrapBurst();
     this.timer = setInterval(async () => {
@@ -109,7 +112,7 @@ class MinecraftMonitorService {
         this.lastError = error.message;
         logger.warn(`Minecraft monitor check failed: ${error.message}`);
       });
-      this.fetchResources().catch(() => {});
+      // this.fetchResources().catch(() => {}); // Disabled due to Cloudflare 403
     }, this.intervalMs);
 
     logger.info("Minecraft monitoring service started");
