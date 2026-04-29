@@ -32,6 +32,8 @@ const elements = {
   restartCooldownMs: document.querySelector("#restartCooldownMs"),
   alertsEnabled: document.querySelector("#alertsEnabled"),
   autoRestartEnabled: document.querySelector("#autoRestartEnabled"),
+  chatBridgeEnabled: document.querySelector("#chatBridgeEnabled"),
+  chatBridgeChannelId: document.querySelector("#chatBridgeChannelId"),
   saveBtn: document.querySelector("#saveBtn"),
   testBtn: document.querySelector("#testBtn"),
   testType: document.querySelector("#testType"),
@@ -89,11 +91,19 @@ function renderGuilds() {
     .join("");
 }
 
-function renderChannels(guildId, selectedChannelId = "") {
+function renderChannels(guildId, selectedChannelId = "", bridgeChannelId = "") {
   const guild = state.guilds.find((entry) => entry.id === guildId);
   const channels = guild?.channels || [];
-  elements.channelId.innerHTML = '<option value="">Select channel...</option>' + channels
+  
+  const options = '<option value="">Select channel...</option>' + channels
     .map((channel) => `<option value="${channel.id}" ${channel.id === selectedChannelId ? "selected" : ""}># ${channel.name}</option>`)
+    .join("");
+    
+  elements.channelId.innerHTML = options;
+  
+  // Also update bridge channel select
+  elements.chatBridgeChannelId.innerHTML = '<option value="">Select channel...</option>' + channels
+    .map((channel) => `<option value="${channel.id}" ${channel.id === (bridgeChannelId || elements.chatBridgeChannelId.value) ? "selected" : ""}># ${channel.name}</option>`)
     .join("");
 }
 
@@ -124,6 +134,9 @@ function applyConfig(config) {
   elements.restartCooldownMs.value = Number(config.restartCooldownMs || 120000);
   elements.alertsEnabled.checked = config.alertsEnabled !== false;
   elements.autoRestartEnabled.checked = config.autoRestartEnabled !== false;
+  elements.chatBridgeEnabled.checked = config.chatBridgeEnabled === true;
+  elements.chatBridgeChannelId.value = config.chatBridgeChannelId || "";
+
   updateMentionFieldVisibility();
   updateAllPreviews();
 }
@@ -304,7 +317,9 @@ function collectPayload() {
     joinUrl: elements.joinUrl.value.trim(),
     restartCooldownMs: Number(elements.restartCooldownMs.value || 120000),
     alertsEnabled: elements.alertsEnabled.checked,
-    autoRestartEnabled: elements.autoRestartEnabled.checked
+    autoRestartEnabled: elements.autoRestartEnabled.checked,
+    chatBridgeEnabled: elements.chatBridgeEnabled.checked,
+    chatBridgeChannelId: elements.chatBridgeChannelId.value
   };
 }
 
@@ -340,7 +355,7 @@ async function loadPage() {
   const statusPayload = await request("/api/minecraft/status");
   renderStatus(statusPayload.monitor);
   applyConfig(statusPayload.config);
-  renderChannels(statusPayload.config.guildId, statusPayload.config.channelId);
+  renderChannels(statusPayload.config.guildId, statusPayload.config.channelId, statusPayload.config.chatBridgeChannelId);
 }
 
 async function refreshStatus() {
@@ -380,7 +395,7 @@ function bindEvents() {
 
   elements.mentionType.addEventListener("change", updateMentionFieldVisibility);
   elements.guildId.addEventListener("change", () => {
-    renderChannels(elements.guildId.value, "");
+    renderChannels(elements.guildId.value, "", "");
   });
   elements.saveBtn.addEventListener("click", () => {
     saveConfig().catch((error) => setActionMessage(error.message, true));

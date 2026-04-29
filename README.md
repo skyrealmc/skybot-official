@@ -75,6 +75,8 @@ Full-stack Discord bot and web dashboard for the SKY REALM community. Self-hosta
 ### Minecraft Integration
 - **Automated Whitelisting** - Zero-touch flow: Approve an application and the bot automatically runs `/whitelist add` via Pterodactyl API.
 - **Advanced Server Dashboard** - Real-time monitoring of server status and resources.
+- **Minecraft-to-Discord Chat Bridge** - Live console streaming that mirrors in-game chat to a Discord channel via Pterodactyl WebSockets.
+- **Auto-Cleanup Channel** - Automatically purges all messages in the chat bridge channel when the last player leaves the server.
 - **Customizable Embed Templates** - Edit titles, descriptions, and **custom colors** for Online, Offline, and Restart alerts.
 - **Real-time Embed Previews** - See exactly how your Minecraft alerts will look in Discord as you edit them.
 - **Resource Monitoring** - Live CPU and RAM usage graphs powered by Chart.js.

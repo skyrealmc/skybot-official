@@ -39,6 +39,8 @@ const minecraftConfigSchema = new mongoose.Schema(
     joinUrl: { type: String, default: "https://skyrealm.fun" },
     autoRestartEnabled: { type: Boolean, default: true },
     restartCooldownMs: { type: Number, default: 120000, min: 10000, max: 3600000 },
+    chatBridgeEnabled: { type: Boolean, default: false },
+    chatBridgeChannelId: { type: String, default: "" },
     updatedBy: { type: String, default: "" }
   },
   { timestamps: true }

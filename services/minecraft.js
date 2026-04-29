@@ -1,4 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require("discord.js");
+const WebSocket = require("ws");
 const logger = require("../utils/logger");
 const {
   getMinecraftConfig,
@@ -45,6 +46,13 @@ class MinecraftMonitorService {
     this.currentResources = { cpu: 0, memory: 0, disk: 0, state: "unknown" };
     this.bootstrapTimer = null;
     this.bootstrapChecksRemaining = 0;
+
+    // Chat Bridge State
+    this.ws = null;
+    this.wsUrl = null;
+    this.wsToken = null;
+    this.reconnectTimer = null;
+    this.lastBridgeChannelId = null;
   }
 
   async fetchResources() {
@@ -92,15 +100,29 @@ class MinecraftMonitorService {
     if (this.isRunning) return;
     this.isRunning = true;
 
-    await this.checkStatus();
+    const config = await getMinecraftConfig();
+    await this.checkStatus(config);
     await this.fetchResources().catch(() => {});
+
+    if (config.chatBridgeEnabled) {
+      this.initChatBridge(config).catch(err => logger.error("Chat bridge init failed:", err));
+    }
+
     this.startBootstrapBurst();
-    this.timer = setInterval(() => {
-      this.checkStatus().catch((error) => {
+    this.timer = setInterval(async () => {
+      const currentConfig = await getMinecraftConfig();
+      this.checkStatus(currentConfig).catch((error) => {
         this.lastError = error.message;
         logger.warn(`Minecraft monitor check failed: ${error.message}`);
       });
       this.fetchResources().catch(() => {});
+
+      // Keep bridge in sync with config
+      if (currentConfig.chatBridgeEnabled && !this.ws) {
+        this.initChatBridge(currentConfig).catch(() => {});
+      } else if (!currentConfig.chatBridgeEnabled && this.ws) {
+        this.stopChatBridge();
+      }
     }, this.intervalMs);
 
     logger.info("Minecraft monitoring service started");
@@ -115,9 +137,126 @@ class MinecraftMonitorService {
       clearInterval(this.bootstrapTimer);
       this.bootstrapTimer = null;
     }
+    this.stopChatBridge();
     this.bootstrapChecksRemaining = 0;
     this.isRunning = false;
     logger.info("Minecraft monitoring service stopped");
+  }
+
+  async initChatBridge(config) {
+    if (!config.chatBridgeEnabled || !config.chatBridgeChannelId) return;
+
+    const apiKey = String(process.env.PTERO_API_KEY || "").trim();
+    const serverId = String(process.env.PTERO_SERVER_ID || "").trim();
+    const panelBase = String(process.env.PTERO_PANEL_URL || "https://panel.wammuhost.com").trim();
+
+    if (!apiKey || !serverId) return;
+
+    try {
+      const url = `${panelBase.replace(/\/+$/, "")}/api/client/servers/${serverId}/websocket`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }
+      });
+
+      if (!response.ok) throw new Error(`Auth failed: ${response.status}`);
+      const data = await response.json();
+
+      this.wsUrl = data.data.socket;
+      this.wsToken = data.data.token;
+      this.lastBridgeChannelId = config.chatBridgeChannelId;
+
+      this.connectWebSocket();
+    } catch (err) {
+      logger.error("Failed to get Pterodactyl WebSocket auth:", err);
+      this.reconnectChatBridge();
+    }
+  }
+
+  connectWebSocket() {
+    if (this.ws) this.ws.close();
+
+    this.ws = new WebSocket(this.wsUrl, { origin: String(process.env.PTERO_PANEL_URL || "") });
+
+    this.ws.on("open", () => {
+      this.ws.send(JSON.stringify({ event: "auth", args: [this.wsToken] }));
+      logger.info("Minecraft Chat Bridge connected to Pterodactyl");
+    });
+
+    this.ws.on("message", (data) => {
+      try {
+        const msg = JSON.parse(data.toString());
+        if (msg.event === "console output") {
+          this.handleConsoleOutput(msg.args[0]);
+        }
+      } catch (e) {}
+    });
+
+    this.ws.on("close", () => {
+      this.ws = null;
+      if (this.isRunning) this.reconnectChatBridge();
+    });
+
+    this.ws.on("error", (err) => {
+      logger.warn("Chat bridge WebSocket error:", err.message);
+    });
+  }
+
+  async handleConsoleOutput(line) {
+    // Regex for standard Minecraft chat: [12:34:56] [Server thread/INFO]: <Player> Message
+    const chatMatch = line.match(/\[Server thread\/INFO\]: <(.+?)> (.+)/);
+    if (chatMatch && this.lastBridgeChannelId) {
+      const playerName = chatMatch[1];
+      const message = chatMatch[2];
+
+      const channel = await this.client.channels.fetch(this.lastBridgeChannelId).catch(() => null);
+      if (channel?.isTextBased()) {
+        await channel.send(`**${playerName}**: ${message}`).catch(() => {});
+      }
+    }
+  }
+
+  reconnectChatBridge() {
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = setTimeout(async () => {
+      const config = await getMinecraftConfig();
+      this.initChatBridge(config);
+    }, 10000);
+  }
+
+  stopChatBridge() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
+  async purgeBridgeChannel(channelId) {
+    if (!channelId) return;
+    try {
+      const channel = await this.client.channels.fetch(channelId).catch(() => null);
+      if (channel?.isTextBased()) {
+        logger.info(`Purging bridge channel ${channelId} (server is empty)`);
+
+        let deleted;
+        do {
+          deleted = await channel.bulkDelete(100, true).catch(() => new Map());
+        } while (deleted?.size > 0);
+
+        // Handle older messages manually if bulkDelete stops
+        const remaining = await channel.messages.fetch({ limit: 50 }).catch(() => new Map());
+        if (remaining.size > 0) {
+          for (const msg of remaining.values()) {
+            await msg.delete().catch(() => {});
+          }
+        }
+      }
+    } catch (err) {
+      logger.error(`Failed to purge bridge channel ${channelId}:`, err);
+    }
   }
 
   startBootstrapBurst() {
@@ -159,31 +298,41 @@ class MinecraftMonitorService {
       resourceHistory: this.resourceHistory
     };
   }
-
-  async checkStatus() {
-    const config = await getMinecraftConfig();
-    if (!config.serverAddress) {
-      this.lastError = "MC_SERVER_ADDRESS is not configured.";
-      this.lastCheckAt = new Date();
-      return this.getStatus();
-    }
-
-    const response = await this.fetchServerStatus(config.serverAddress);
-    const online = Boolean(response?.online);
-    const playersOnline = Number(response?.players?.online ?? 0);
-    this.playerList = response?.players?.list || [];
-
-    const previous = this.lastKnownOnline;
-    this.lastKnownOnline = online;
-    this.lastPlayersOnline = Number.isFinite(playersOnline) ? playersOnline : null;
+async checkStatus(providedConfig = null) {
+  const config = providedConfig || await getMinecraftConfig();
+  if (!config.serverAddress) {
+    this.lastError = "MC_SERVER_ADDRESS is not configured.";
     this.lastCheckAt = new Date();
-    this.lastError = "";
+    return this.getStatus();
+  }
 
-    if (previous === null) {
-      return this.getStatus();
+  const response = await this.fetchServerStatus(config.serverAddress);
+  const online = Boolean(response?.online);
+  const playersOnline = Number(response?.players?.online ?? 0);
+  this.playerList = response?.players?.list || [];
+
+  const previousOnline = this.lastKnownOnline;
+  const previousPlayerCount = this.lastPlayersOnline;
+
+  this.lastKnownOnline = online;
+  this.lastPlayersOnline = Number.isFinite(playersOnline) ? playersOnline : null;
+  this.lastCheckAt = new Date();
+  this.lastError = "";
+
+  // AUTO-CLEANUP LOGIC
+  // Transition from >0 players to 0 players
+  if (config.chatBridgeEnabled && config.chatBridgeChannelId) {
+    if (previousPlayerCount > 0 && playersOnline === 0) {
+      this.purgeBridgeChannel(config.chatBridgeChannelId);
     }
+  }
 
-    if (previous !== online) {
+  if (previousOnline === null) {
+    return this.getStatus();
+  }
+
+  if (previousOnline !== online) {
+...
       this.lastTransitionAt = new Date();
       if (online) {
         await this.sendAlert("restart", config);

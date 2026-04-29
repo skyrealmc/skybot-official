@@ -34,7 +34,9 @@ function buildEnvDefaults() {
     },
     joinUrl: "https://skyrealm.fun",
     autoRestartEnabled: true,
-    restartCooldownMs: 120000
+    restartCooldownMs: 120000,
+    chatBridgeEnabled: false,
+    chatBridgeChannelId: ""
   };
 }
 
@@ -74,6 +76,8 @@ function normalizeConfig(docOrObject) {
     joinUrl: raw.joinUrl || "https://skyrealm.fun",
     autoRestartEnabled: raw.autoRestartEnabled !== false,
     restartCooldownMs: Number(raw.restartCooldownMs || 120000),
+    chatBridgeEnabled: Boolean(raw.chatBridgeEnabled),
+    chatBridgeChannelId: raw.chatBridgeChannelId || "",
     updatedBy: raw.updatedBy || "",
     updatedAt: raw.updatedAt || null,
     createdAt: raw.createdAt || null
@@ -146,6 +150,12 @@ async function updateMinecraftConfig(updates = {}, updatedBy = "") {
   }
   if (updates.restartCooldownMs !== undefined) {
     setValues.restartCooldownMs = Number(updates.restartCooldownMs || 120000);
+  }
+  if (updates.chatBridgeEnabled !== undefined) {
+    setValues.chatBridgeEnabled = Boolean(updates.chatBridgeEnabled);
+  }
+  if (updates.chatBridgeChannelId !== undefined) {
+    setValues.chatBridgeChannelId = String(updates.chatBridgeChannelId || "").trim();
   }
 
   if (updatedBy) {
