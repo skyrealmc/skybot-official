@@ -14,13 +14,20 @@ const {
   getWhitelistConfig,
   saveWhitelistConfig
 } = require("../services/whitelistConfigService");
+const { verifyTurnstileToken } = require("../utils/turnstile");
 const logger = require("../utils/logger");
 
 // POST /api/whitelist/apply
 // Public endpoint - create new application
 async function submitApplication(req, res) {
   try {
-    const { minecraftUsername, discordId, email, age } = req.body;
+    const { minecraftUsername, discordId, email, age, turnstileToken } = req.body;
+
+    // Verify Turnstile Token
+    const isHuman = await verifyTurnstileToken(turnstileToken, req.ip);
+    if (!isHuman) {
+      return res.status(400).json({ error: "Security check failed. Please try again." });
+    }
 
     const application = await createApplication({
       minecraftUsername,
@@ -376,50 +383,38 @@ async function saveWhitelistConfigEndpoint(req, res) {
   try {
     const { guildId } = req.params;
     const adminId = req.session.user?.id;
-    const { channelId, embedTemplate, rejectionTemplate, roleId } = req.body;
+    const { channelId, roleId, embedTemplate, rejectionTemplate } = req.body;
 
     if (!adminId) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    if (!channelId) {
-      return res.status(400).json({ error: "Channel ID is required" });
-    }
-
-    const configData = {
+    const config = await saveWhitelistConfig(guildId, {
       channelId,
-      roleId
-    };
-
-    if (embedTemplate) {
-      configData.embedTemplate = embedTemplate;
-    }
-
-    if (rejectionTemplate) {
-      configData.rejectionTemplate = rejectionTemplate;
-    }
-
-    const config = await saveWhitelistConfig(guildId, adminId, configData);
+      roleId,
+      embedTemplate,
+      rejectionTemplate
+    });
 
     res.json({
       success: true,
-      message: "Whitelist config saved successfully",
+      message: "Whitelist configuration saved successfully",
       config
     });
   } catch (error) {
     logger.error("Error saving whitelist config", error);
-    res.status(500).json({ error: "Failed to save config" });
+    res.status(500).json({ error: "Failed to save configuration" });
   }
 }
 
 module.exports = {
   submitApplication,
   listApplications,
-  getApplication,
   approveApplicationEndpoint,
   rejectApplicationEndpoint,
   deleteApplicationEndpoint,
   resendApplicationNotification,
+  getApplication,
   getWhitelistConfigEndpoint,
   saveWhitelistConfigEndpoint
 };
