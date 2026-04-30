@@ -8,6 +8,12 @@ function formatTimestamp(value) {
   return `<t:${Math.floor(date.getTime() / 1000)}:R>`;
 }
 
+function getStateLabel(online) {
+  if (online === true) return "🟢 Online";
+  if (online === false) return "🔴 Offline";
+  return "🟡 Unknown";
+}
+
 module.exports = {
   category: "utility",
   data: new SlashCommandBuilder()
@@ -29,24 +35,21 @@ module.exports = {
     ]);
 
     const online = status.online;
-    const stateText = online === true ? "Online" : online === false ? "Offline" : "Unknown";
+    const stateText = getStateLabel(online);
     const color = online === true ? "#22c55e" : online === false ? "#ef4444" : "#f59e0b";
     const players = Number.isFinite(status.playersOnline) ? String(status.playersOnline) : "-";
-    const lastError = status.lastError || "None";
     const serverAddress = config.serverAddress || "Not configured";
+    const details = [
+      `**Players:** ${players}`,
+      `**Last Check:** ${formatTimestamp(status.lastCheckAt)}`,
+      status.lastRestartAttemptAt ? `**Restart:** ${formatTimestamp(status.lastRestartAttemptAt)}` : null
+    ].filter(Boolean).join("\n");
 
     const embed = new EmbedBuilder()
       .setTitle("Minecraft Server Status")
       .setColor(color)
-      .addFields(
-        { name: "State", value: stateText, inline: true },
-        { name: "Players", value: players, inline: true },
-        { name: "Server", value: serverAddress, inline: false },
-        { name: "Last Check", value: formatTimestamp(status.lastCheckAt), inline: true },
-        { name: "Last Event", value: status.lastEvent || "None", inline: true },
-        { name: "Last Restart Attempt", value: formatTimestamp(status.lastRestartAttemptAt), inline: false },
-        { name: "Monitor Error", value: lastError, inline: false }
-      )
+      .setDescription(`${stateText}\n${details}`)
+      .addFields({ name: "Server", value: `\`${serverAddress}\``, inline: false })
       .setTimestamp(new Date());
 
     if (Array.isArray(status.playerList) && status.playerList.length > 0) {
@@ -55,6 +58,12 @@ module.exports = {
         value: status.playerList.slice(0, 15).join(", "),
         inline: false
       });
+    }
+
+    if (status.lastError) {
+      embed.setFooter({ text: `Monitor: ${status.lastError.slice(0, 100)}` });
+    } else if (status.lastEvent) {
+      embed.setFooter({ text: `Last event: ${status.lastEvent}` });
     }
 
     await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
