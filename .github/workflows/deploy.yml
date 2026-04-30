@@ -18,17 +18,21 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-            # Go to your bot folder
-            cd /home/ubuntu/skybot-official
+  # Source NVM to load Node/npm environment
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  
+  # Go to your bot folder
+  cd /home/ubuntu/skybot-official
 
-            # Pull latest code
-            git pull origin main
+  # Pull latest code
+  git pull origin main
 
-            # Install dependencies (safe)
-            npm install --production
+  # Install dependencies (safe)
+  npm install --production
 
-            # Restart bots using PM2
-            pm2 reload all || pm2 restart all
+  # Restart bots using PM2
+  pm2 reload all || pm2 restart all
 
-            # Save PM2 state
-            pm2 save
+  # Save PM2 state
+  pm2 save
