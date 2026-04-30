@@ -29,6 +29,7 @@ function createApp({ client }) {
   // Initialize scheduler service
   const scheduler = new SchedulerService(client);
   const minecraftMonitor = new MinecraftMonitorService(client);
+  client.minecraftMonitor = minecraftMonitor;
 
   if (isProduction) {
     app.set("trust proxy", 1);
