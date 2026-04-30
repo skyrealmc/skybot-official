@@ -18,21 +18,33 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-  # Source NVM to load Node/npm environment
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  
-  # Go to your bot folder
-  cd /home/ubuntu/skybot-official
+            echo "🚀 Starting deployment..."
 
-  # Pull latest code
-  git pull origin main
+            # Load NVM (fix for node/npm/pm2 not found)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-  # Install dependencies (safe)
-  npm install --production
+            # Debug (optional)
+            echo "Node version:"
+            node -v || echo "Node not found"
+            echo "NPM version:"
+            npm -v || echo "NPM not found"
+            echo "PM2 path:"
+            which pm2 || echo "PM2 not found"
 
-  # Restart bots using PM2
-  pm2 reload all || pm2 restart all
+            # Go to project folder
+            cd /home/ubuntu/skybot-official || exit 1
 
-  # Save PM2 state
-  pm2 save
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            echo "📦 Installing dependencies..."
+            npm install --production
+
+            echo "🔁 Restarting bot..."
+            pm2 reload all || pm2 restart all
+
+            echo "💾 Saving PM2 state..."
+            pm2 save
+
+            echo "✅ Deployment completed!"
