@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const { generateResponse } = require("../../../services/groqService");
 const logger = require("../../../utils/logger");
 
@@ -21,7 +21,7 @@ module.exports = {
       try {
         await interaction.reply({
           content: "❌ Question is too long (max 1000 characters). Please ask a shorter question!",
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       } catch (e) {
         logger.warn("Could not send reply:", e.message);
@@ -31,9 +31,9 @@ module.exports = {
 
     logger.info(`[ASK] ${interaction.user.username}: ${question}`);
 
-    // Defer with ephemeral true
+    // Defer with ephemeral flag
     try {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     } catch (e) {
       logger.error("Failed to defer:", e.message);
       return;
