@@ -2,9 +2,12 @@ const Groq = require("groq-sdk");
 const KnowledgeBase = require("../models/KnowledgeBase");
 const logger = require("../utils/logger");
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
-});
+// Initialize Groq only if API key is available
+const groq = process.env.GROQ_API_KEY 
+  ? new Groq({
+      apiKey: process.env.GROQ_API_KEY
+    })
+  : null;
 
 // System prompt for the community assistant
 const SYSTEM_PROMPT = `You are a helpful Discord bot assistant for Sky Realms SMP, a Minecraft community. Your role is to:
@@ -63,6 +66,15 @@ async function getRelevantKnowledge(query) {
  */
 async function generateResponse(userMessage, context = {}) {
   try {
+    // Check if Groq API key is available
+    if (!groq) {
+      return {
+        success: false,
+        reply: "⚠️ AI features are currently unavailable. The Groq API key is not configured. Please contact staff.",
+        error: "GROQ_API_KEY not set"
+      };
+    }
+
     // Get relevant knowledge base articles
     const knowledgeArticles = await getRelevantKnowledge(userMessage);
 
