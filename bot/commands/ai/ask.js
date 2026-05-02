@@ -14,26 +14,32 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    try {
-      const question = interaction.options.getString("question");
+    const question = interaction.options.getString("question");
 
-      // Validate question length
-      if (question.length > 1000) {
+    // Validate question length
+    if (question.length > 1000) {
+      try {
         await interaction.reply({
           content: "❌ Question is too long (max 1000 characters). Please ask a shorter question!",
-          flags: 64
+          ephemeral: true
         });
-        return;
+      } catch (e) {
+        logger.warn("Could not send reply:", e.message);
       }
+      return;
+    }
 
-      logger.info(`[ASK] ${interaction.user.username}: ${question}`);
+    logger.info(`[ASK] ${interaction.user.username}: ${question}`);
 
-      // Show thinking message
-      await interaction.reply({
-        content: "🤔 Thinking...",
-        flags: 0
-      });
+    // Defer with ephemeral true
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (e) {
+      logger.error("Failed to defer:", e.message);
+      return;
+    }
 
+    try {
       // Generate response with Groq
       const result = await generateResponse(question, {
         username: interaction.user.username,
@@ -77,20 +83,10 @@ module.exports = {
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       logger.error("Error in ask command:", error);
-      
       try {
-        // Only reply if we haven't already
-        if (!interaction.replied) {
-          await interaction.reply({
-            content: "❌ An error occurred while processing your question. Please try again later.",
-            flags: 64
-          });
-        } else {
-          // If we already replied, edit the reply
-          await interaction.editReply({
-            content: "❌ An error occurred while processing your question. Please try again later."
-          });
-        }
+        await interaction.editReply({
+          content: "❌ An error occurred while processing your question. Please try again later."
+        });
       } catch (e) {
         logger.error("Failed to send error reply:", e);
       }
