@@ -1,6 +1,7 @@
 const logger = require("../utils/logger");
 const AFK = require("../models/AFK");
 const { registerCommands } = require("./commandLoader");
+const { initializeDefaultArticles } = require("../services/groqService");
 
 function registerEventHandlers(client) {
   client.once("clientReady", async () => {
@@ -16,6 +17,18 @@ function registerEventHandlers(client) {
       client.reminderService?.start();
     } catch (error) {
       logger.error("Failed to start reminder service", error);
+    }
+
+    // Initialize Groq knowledge base
+    try {
+      if (process.env.GROQ_API_KEY) {
+        await initializeDefaultArticles();
+        logger.info("Groq AI service initialized");
+      } else {
+        logger.warn("GROQ_API_KEY not set - AI features will be unavailable");
+      }
+    } catch (error) {
+      logger.error("Failed to initialize Groq service", error);
     }
   });
 
@@ -46,6 +59,16 @@ function registerEventHandlers(client) {
       }
     } catch (error) {
       logger.warn(`AFK listener failed: ${error.message}`);
+    }
+  });
+
+  // Groq AI mention handler
+  if (process.env.GROQ_API_KEY) {
+    try {
+      const groqHandler = require("./eventHandlers/groqMentionHandler");
+      client.on("messageCreate", (message) => groqHandler.execute(message));
+    } catch (error) {
+      logger.warn("Groq mention handler failed to load", error);
     }
   });
 }

@@ -151,6 +151,10 @@ function createApp({ client }) {
     res.sendFile(path.join(__dirname, "..", "dashboard", "index.html"));
   });
 
+  app.get("/knowledge-base", (_req, res) => {
+    res.sendFile(path.join(__dirname, "..", "dashboard", "knowledge-base.html"));
+  });
+
   // Static files (CSS, JS, images, etc.)
   app.use(express.static(path.join(__dirname, "..", "dashboard")));
 
