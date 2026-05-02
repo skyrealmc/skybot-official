@@ -1,6 +1,6 @@
 const { ChannelType, EmbedBuilder } = require("discord.js");
-const { generateResponse } = require("../services/groqService");
-const logger = require("../utils/logger");
+const { generateResponse } = require("../../services/groqService");
+const logger = require("../../utils/logger");
 
 module.exports = {
   name: "messageCreate",

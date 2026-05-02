@@ -15,16 +15,17 @@ module.exports = {
 
   async execute(interaction) {
     try {
-      // Show that the bot is thinking
-      await interaction.deferReply({ ephemeral: false });
+      // Defer reply to acknowledge the interaction
+      await interaction.deferReply({ flags: 0 });
 
       const question = interaction.options.getString("question");
 
       // Validate question length
       if (question.length > 1000) {
-        return interaction.editReply({
+        await interaction.editReply({
           content: "❌ Question is too long (max 1000 characters). Please ask a shorter question!"
         });
+        return;
       }
 
       logger.info(`[ASK] ${interaction.user.username}: ${question}`);
@@ -37,9 +38,10 @@ module.exports = {
       });
 
       if (!result.success) {
-        return interaction.editReply({
+        await interaction.editReply({
           content: result.reply
         });
+        return;
       }
 
       // Create embed for response
@@ -71,9 +73,21 @@ module.exports = {
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       logger.error("Error in ask command:", error);
-      await interaction.editReply({
-        content: "❌ An error occurred while processing your question. Please try again later."
-      });
+      
+      try {
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: "❌ An error occurred while processing your question. Please try again later.",
+            flags: 64
+          });
+        } else if (interaction.deferred) {
+          await interaction.editReply({
+            content: "❌ An error occurred while processing your question. Please try again later."
+          });
+        }
+      } catch (e) {
+        logger.error("Failed to send error reply:", e);
+      }
     }
   }
 };
