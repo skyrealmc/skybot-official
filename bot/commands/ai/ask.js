@@ -15,20 +15,24 @@ module.exports = {
 
   async execute(interaction) {
     try {
-      // Defer reply to acknowledge the interaction
-      await interaction.deferReply({ flags: 0 });
-
       const question = interaction.options.getString("question");
 
       // Validate question length
       if (question.length > 1000) {
-        await interaction.editReply({
-          content: "❌ Question is too long (max 1000 characters). Please ask a shorter question!"
+        await interaction.reply({
+          content: "❌ Question is too long (max 1000 characters). Please ask a shorter question!",
+          flags: 64
         });
         return;
       }
 
       logger.info(`[ASK] ${interaction.user.username}: ${question}`);
+
+      // Show thinking message
+      await interaction.reply({
+        content: "🤔 Thinking...",
+        flags: 0
+      });
 
       // Generate response with Groq
       const result = await generateResponse(question, {
@@ -75,12 +79,14 @@ module.exports = {
       logger.error("Error in ask command:", error);
       
       try {
-        if (!interaction.replied && !interaction.deferred) {
+        // Only reply if we haven't already
+        if (!interaction.replied) {
           await interaction.reply({
             content: "❌ An error occurred while processing your question. Please try again later.",
             flags: 64
           });
-        } else if (interaction.deferred) {
+        } else {
+          // If we already replied, edit the reply
           await interaction.editReply({
             content: "❌ An error occurred while processing your question. Please try again later."
           });
