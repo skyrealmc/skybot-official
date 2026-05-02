@@ -70,7 +70,7 @@ function registerEventHandlers(client) {
     } catch (error) {
       logger.warn("Groq mention handler failed to load", error);
     }
-  });
+  }
 }
 
 module.exports = registerEventHandlers;

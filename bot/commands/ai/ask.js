@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { generateResponse } = require("../../services/groqService");
-const logger = require("../../utils/logger");
+const { generateResponse } = require("../../../services/groqService");
+const logger = require("../../../utils/logger");
 
 module.exports = {
   data: new SlashCommandBuilder()
