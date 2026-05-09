@@ -9,6 +9,13 @@ const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
  * Middleware to ensure the user is a member of the target Discord guild.
  */
 async function requireGuildMember(req, res, next) {
+  // Allow access if a valid internal API key is provided
+  const aiPlatformKey = req.headers["x-ai-platform-key"];
+  const internalKey = process.env.INTERNAL_API_KEY;
+  if (internalKey && aiPlatformKey === internalKey) {
+    return next();
+  }
+
   // 1. Check if user is authenticated at all
   if (!req.session.user || !req.session.access_token) {
     return res.status(401).json({
