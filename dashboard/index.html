@@ -15,8 +15,8 @@
     <!-- Early widget visibility check: hide on login pages -->
     <script>
       // Check if on login/auth page IMMEDIATELY
-      const isAuthPage = window.location.pathname.includes('/auth') || 
-                         window.location.pathname === '/';
+      // Only hide on /auth/* pages, NOT on dashboard root /
+      const isAuthPage = window.location.pathname.startsWith('/auth');
       if (isAuthPage) {
         // Add CSS to hide widget container from the start
         const style = document.createElement('style');
@@ -492,8 +492,8 @@
       // Skip entirely on auth/login pages
       document.addEventListener('DOMContentLoaded', async () => {
         // Check if this is an auth page
-        const isAuthPage = window.location.pathname.includes('/auth') || 
-                          window.location.pathname === '/';
+        // Only skip on /auth/* pages, NOT on dashboard root /
+        const isAuthPage = window.location.pathname.startsWith('/auth');
         if (isAuthPage) {
           console.log('[AI Widget] Skipping widget load on auth page');
           return;

@@ -35,18 +35,17 @@ class AIAssistant {
 
   /**
    * Check if user is authenticated
-   * Returns false on auth/login pages
+   * Returns false on auth/login pages only
    */
   isUserAuthenticated() {
-    // Hide on auth/login pages
+    // Hide on /auth/* pages only
     const currentPath = window.location.pathname;
-    if (currentPath.includes('/auth') || currentPath.includes('/login')) {
+    if (currentPath.startsWith('/auth')) {
       return false;
     }
     
-    // Check if session exists (would be on authenticated pages)
-    // If we can fetch from API without 401, user is authenticated
-    return true; // Will be validated when first API call is made
+    // Widget should show on all other pages (including dashboard root /)
+    return true;
   }
 
   /**
