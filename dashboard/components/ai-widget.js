@@ -2,6 +2,13 @@
 
 class AIAssistant {
   constructor() {
+    // Check if user is authenticated - hide on login pages
+    if (!this.isUserAuthenticated()) {
+      console.log('[AI Widget] User not authenticated - hiding widget');
+      this.hideWidget();
+      return;
+    }
+
     this.panel = document.getElementById('aiChatPanel');
     this.button = document.getElementById('aiWidgetButton');
     this.closeButton = document.getElementById('aiCloseButton');
@@ -9,11 +16,44 @@ class AIAssistant {
     this.inputField = document.getElementById('aiInputField');
     this.sendButton = document.getElementById('aiSendButton');
 
+    // Validate all elements exist before initializing
+    if (!this.panel || !this.button || !this.closeButton) {
+      console.error('[AI Widget] Required elements not found in DOM');
+      return;
+    }
+
     this.chatHistory = []; // Session-only chat history
     this.lastSuggestion = null;
     this.isWaitingForResponse = false;
 
     this.init();
+    console.log('[AI Widget] Initialized successfully');
+  }
+
+  /**
+   * Check if user is authenticated
+   * Returns false on auth/login pages
+   */
+  isUserAuthenticated() {
+    // Hide on auth/login pages
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/auth') || currentPath.includes('/login')) {
+      return false;
+    }
+    
+    // Check if session exists (would be on authenticated pages)
+    // If we can fetch from API without 401, user is authenticated
+    return true; // Will be validated when first API call is made
+  }
+
+  /**
+   * Hide the entire widget container
+   */
+  hideWidget() {
+    const container = document.getElementById('aiWidgetContainer');
+    if (container) {
+      container.style.display = 'none';
+    }
   }
 
   init() {

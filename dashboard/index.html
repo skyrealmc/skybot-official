@@ -475,15 +475,25 @@
     <!-- AI Widget Component -->
     <link rel="stylesheet" href="/components/ai-widget.css">
     <div id="aiWidgetContainer"></div>
-    <script src="/components/ai-widget.js"></script>
     <script>
-      // Load widget HTML when page is ready
+      // Load widget HTML when page is ready, THEN initialize JS
       document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('aiWidgetContainer');
         try {
           const response = await fetch('/components/ai-widget.html');
           const html = await response.text();
           container.innerHTML = html;
+          
+          // Now load and initialize the widget JS AFTER HTML is in DOM
+          const script = document.createElement('script');
+          script.src = '/components/ai-widget.js';
+          script.onload = () => {
+            // Initialize AI Assistant after script loads
+            if (typeof AIAssistant !== 'undefined') {
+              window.aiAssistant = new AIAssistant();
+            }
+          };
+          document.body.appendChild(script);
         } catch (error) {
           console.error('Failed to load AI widget:', error);
         }
