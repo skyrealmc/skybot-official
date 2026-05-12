@@ -271,11 +271,32 @@ class AIAssistant {
     }
 
     // Handle channel selection if possible
+    // Note: Groq returns channel names (like "announcements") but form expects channel IDs
     if (suggestion.channel) {
       const channelSelect = document.querySelector('select[name="channel"]') ||
                            document.querySelector('#channelSelect');
-      if (channelSelect) {
-        channelSelect.value = suggestion.channel;
+      if (channelSelect && channelSelect.length > 0) {
+        // Try to find a channel matching the suggested name
+        let matched = false;
+        const suggestedChannelLower = suggestion.channel.toLowerCase();
+        
+        for (let i = 0; i < channelSelect.options.length; i++) {
+          const option = channelSelect.options[i];
+          const optionText = option.textContent.toLowerCase();
+          
+          // Match if option contains or is the suggested channel name
+          if (optionText.includes(suggestedChannelLower) || optionText === suggestedChannelLower) {
+            channelSelect.value = option.value;
+            matched = true;
+            break;
+          }
+        }
+        
+        // If no match found, select first available non-placeholder channel
+        if (!matched && channelSelect.options.length > 1) {
+          channelSelect.value = channelSelect.options[1].value;
+        }
+        
         channelSelect.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
