@@ -256,9 +256,9 @@ class AIAssistant {
 
     // Fill scheduler form fields
     const fields = {
-      'embedTitle': suggestion.title,
-      'embedDescription': suggestion.description,
-      'embedColor': suggestion.color
+      'title': suggestion.title,
+      'description': suggestion.description,
+      'color': suggestion.color
     };
 
     for (const [fieldId, value] of Object.entries(fields)) {
