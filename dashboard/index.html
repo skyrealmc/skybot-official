@@ -471,5 +471,23 @@
     </template>
 
     <script src="./app.js" type="module"></script>
+    
+    <!-- AI Widget Component -->
+    <link rel="stylesheet" href="/components/ai-widget.css">
+    <div id="aiWidgetContainer"></div>
+    <script src="/components/ai-widget.js"></script>
+    <script>
+      // Load widget HTML when page is ready
+      document.addEventListener('DOMContentLoaded', async () => {
+        const container = document.getElementById('aiWidgetContainer');
+        try {
+          const response = await fetch('/components/ai-widget.html');
+          const html = await response.text();
+          container.innerHTML = html;
+        } catch (error) {
+          console.error('Failed to load AI widget:', error);
+        }
+      });
+    </script>
   </body>
 </html>

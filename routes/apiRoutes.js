@@ -55,12 +55,6 @@ const {
   updateMinecraftConfigEndpoint,
   sendMinecraftTestAlert
 } = require("../controllers/minecraftController");
-const {
-  getArticlesEndpoint,
-  createArticleEndpoint,
-  updateArticleEndpoint,
-  deleteArticleEndpoint
-} = require("../controllers/knowledgeBaseController");
 
 function createApiRouter({ client }) {
   const router = express.Router();
@@ -155,11 +149,9 @@ function createApiRouter({ client }) {
   router.patch("/minecraft/config", requireAccountCapability("manage_settings"), updateMinecraftConfigEndpoint);
   router.post("/minecraft/test-alert", requireAccountCapability("manage_settings"), sendMinecraftTestAlert);
 
-  // Knowledge Base / AI Assistant
-  router.get("/knowledge-base/articles", getArticlesEndpoint);
-  router.post("/knowledge-base/articles", requireAccountCapability("manage_settings"), createArticleEndpoint);
-  router.put("/knowledge-base/articles/:id", requireAccountCapability("manage_settings"), updateArticleEndpoint);
-  router.delete("/knowledge-base/articles/:id", requireAccountCapability("manage_settings"), deleteArticleEndpoint);
+  // AI Announcement Assistant
+  const aiRoutes = require('./aiRoutes');
+  router.use('/ai', aiRoutes);
 
   return router;
 }

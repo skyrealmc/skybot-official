@@ -1,0 +1,44 @@
+<!-- AI Widget HTML Template -->
+
+<!-- Floating Widget Button -->
+<button id="aiWidgetButton" class="ai-widget-button" title="AI Assistant" aria-label="Open AI Assistant">
+  💬
+</button>
+
+<!-- Chat Panel -->
+<div id="aiChatPanel" class="ai-chat-panel" style="display: none;">
+  <!-- Header -->
+  <div class="ai-chat-header">
+    <div class="ai-chat-title">
+      <span>🤖</span>
+      <span>AI Assistant</span>
+    </div>
+    <button id="aiCloseButton" class="ai-chat-close" aria-label="Close chat">✕</button>
+  </div>
+
+  <!-- Messages Area -->
+  <div class="ai-messages" id="aiMessagesContainer">
+    <div class="ai-empty-state">
+      <div class="ai-empty-icon">🤖</div>
+      <div class="ai-empty-text">
+        <strong>AI Announcement Assistant</strong><br>
+        Tell me what announcement you want to create, and I'll help fill out the form!
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="ai-input-area">
+    <input
+      type="text"
+      id="aiInputField"
+      class="ai-input-field"
+      placeholder="e.g., Create a mod release announcement..."
+      aria-label="Message input"
+    />
+    <button id="aiSendButton" class="ai-send-button" aria-label="Send message">📤</button>
+  </div>
+</div>
+
+<script src="/components/ai-widget.js"></script>
+<link rel="stylesheet" href="/components/ai-widget.css">
