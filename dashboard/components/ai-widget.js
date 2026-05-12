@@ -26,6 +26,9 @@ class AIAssistant {
     this.lastSuggestion = null;
     this.isWaitingForResponse = false;
 
+    // Show widget container now that we're authenticated
+    this.showWidget();
+    
     this.init();
     console.log('[AI Widget] Initialized successfully');
   }
@@ -47,11 +50,22 @@ class AIAssistant {
   }
 
   /**
+   * Show the entire widget container
+   */
+  showWidget() {
+    const container = document.getElementById('aiWidgetContainer');
+    if (container) {
+      container.classList.add('show');
+    }
+  }
+
+  /**
    * Hide the entire widget container
    */
   hideWidget() {
     const container = document.getElementById('aiWidgetContainer');
     if (container) {
+      container.classList.remove('show');
       container.style.display = 'none';
     }
   }

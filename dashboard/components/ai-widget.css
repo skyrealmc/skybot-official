@@ -1,5 +1,15 @@
 /* AI Widget Styles */
 
+/* Hide widget container by default - only show when authenticated */
+#aiWidgetContainer {
+  display: none;
+}
+
+/* Show widget container when on authenticated page */
+#aiWidgetContainer.show {
+  display: block;
+}
+
 .ai-widget-button {
   position: fixed;
   bottom: 30px;

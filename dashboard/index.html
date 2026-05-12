@@ -12,6 +12,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
+    <!-- Early widget visibility check: hide on login pages -->
+    <script>
+      // Check if on login/auth page IMMEDIATELY
+      const isAuthPage = window.location.pathname.includes('/auth') || 
+                         window.location.pathname === '/';
+      if (isAuthPage) {
+        // Add CSS to hide widget container from the start
+        const style = document.createElement('style');
+        style.textContent = '#aiWidgetContainer { display: none !important; }';
+        document.head.appendChild(style);
+      }
+    </script>
   </head>
   <body>
     <!-- Login Page (shown when not authenticated) -->
@@ -477,7 +489,16 @@
     <div id="aiWidgetContainer"></div>
     <script>
       // Load widget HTML when page is ready, THEN initialize JS
+      // Skip entirely on auth/login pages
       document.addEventListener('DOMContentLoaded', async () => {
+        // Check if this is an auth page
+        const isAuthPage = window.location.pathname.includes('/auth') || 
+                          window.location.pathname === '/';
+        if (isAuthPage) {
+          console.log('[AI Widget] Skipping widget load on auth page');
+          return;
+        }
+
         const container = document.getElementById('aiWidgetContainer');
         try {
           const response = await fetch('/components/ai-widget.html');
