@@ -68,6 +68,7 @@ async function generateAnnouncementSuggestion(userRequest, context = {}) {
       ]
     });
 
+    logger.info('[AI] Groq API response received');
     let responseText = message.choices[0].message.content.trim();
     
     // Extract JSON from response (in case AI adds extra text)
@@ -106,6 +107,7 @@ async function generateAnnouncementSuggestion(userRequest, context = {}) {
     };
   } catch (error) {
     logger.error('Error generating announcement suggestion:', error);
+    console.error('[AI] Groq API Error Details:', error.message, error.status, error.error);
     return {
       success: false,
       message: 'Failed to generate announcement. Please try again.'
